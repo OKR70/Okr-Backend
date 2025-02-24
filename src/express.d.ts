@@ -1,5 +1,5 @@
 
-import { User } from './models/user.js';
+import { IUser } from './models/user';
 
 /*
  * Глобальная настройка Express
@@ -8,7 +8,7 @@ import { User } from './models/user.js';
 declare global {
     namespace Express {
         interface Request { // Запрос
-            user?: User;
+            user?: IUser;
         }
         interface Response { // Ответ
             cookie(name: string, value: string, options?: any): this;
