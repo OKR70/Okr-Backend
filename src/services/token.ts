@@ -21,19 +21,24 @@ const {
 
 const TokenService = {
     // Генерация токена для отправки на Email
-    async generateEmailToken(email: string, deviceId: string) {
+    async generateToken(userId: string) {
         const jti = uuidv4();
-        const emailTokenExpiresIn = parseExpirationTime(JWT_TOKEN_EXPIRES_IN);
-        
+        const tokenExpiresIn = parseExpirationTime(JWT_TOKEN_EXPIRES_IN);
+
+        await new IssuedJWTTokenModel({
+            jti,
+            userId,
+            expiredAt: Date.now() + tokenExpiresIn
+        }).save();
+
         return jwt.sign(
             {
                 jti,
-                email,
-                deviceId
+                userId
             },
-            JWT_SECRET_EMAIL,
+            JWT_TOKEN_SECRET,
             {
-                expiresIn: emailTokenExpiresIn
+                expiresIn: tokenExpiresIn
             }
         )
     },
@@ -43,67 +48,6 @@ const TokenService = {
         const revokedToken = await IssuedJWTTokenModel.findOne({ jti });
         return revokedToken ? revokedToken.revoked : false;
     },
-
-    // Обновление токенов
-    async updateTokens(refreshToken: string, userIp: string) {
-        try {
-            const payload: any = jwt.verify(refreshToken, JWT_SECRET_REFRESH);
-
-            const user = await UserModel.findById(payload.userId);
-            if (!user) {
-                throw new Error('Пользователь не найден');
-            }
-
-            // Проверка зарегестрированности устройства
-            if (!user.devices || !user.devices.some((device) => device.deviceId === payload.deviceId)) {
-                await this.revokeAllTokensForUser(payload.userId);
-                throw new Error('Устройство не зарегистрировано у этого пользователя');
-            }
-
-            // Проверяем тип токена
-            if (payload['type'] !== 'refresh') {
-                await this.revokeAllTokensForUser(payload.userId);
-                throw new Error('Access token не может быть использован для обновления');
-            }
-
-            // Проверяем отозван ли токен
-            if (await this.checkRevoked(payload['jti'])) {
-                await this.revokeAllTokensForUser(payload.userId);
-                throw new Error('Токен был отозван');
-            }
-
-            // Отзываем все предыдущие refresh-токены для устройства
-            await IssuedJWTTokenModel.updateMany(
-                { userId: payload.userId, deviceId: payload.deviceId },
-                { revoked: true }
-            );
-
-            return await this.generateTokens(payload.userId, payload.deviceId, userIp);
-        } catch (error) {
-            throw error;
-        }
-    },
-
-    // // Выход с одного устройства
-    // async logoutDevice(userId: string, deviceId: string) {
-    //     try {
-    //         await IssuedJWTTokenModel.updateMany({ userId, deviceId }, { revoked: true });
-
-    //         const user = await UserModel.findById(userId);
-
-    //         if (user && user.devices) {
-    //             const deviceIndex = user.devices.findIndex((device) => device.deviceId === deviceId);
-
-    //             if (deviceIndex !== -1) {
-    //                 user.devices.splice(deviceIndex, 1);
-
-    //                 await user.save();
-    //             }
-    //         }
-    //     } catch (error) {
-    //         throw error;
-    //     }
-    // },
 
     // Выход со всех устройств
     async revokeAllTokensForUser(userId: string) {
@@ -115,15 +59,15 @@ const TokenService = {
     },
 
     // Установка cookie
-    setRefreshTokenAndDeviceIdCookie(res: Response, refreshToken: string) {
+    setTokenCookie(res: Response, token: string) {
         const maxAge = parseExpirationTime(JWT_TOKEN_EXPIRES_IN);
 
-        CookieService.setCookie(res, 'refreshToken', refreshToken, maxAge);
+        CookieService.setCookie(res, 'token', token, maxAge);
     },
 
     // Очищение cookie
-    clearRefreshTokenAndDeviceIdCookie(res: Response) {
-        CookieService.clearCookie(res, 'refreshToken');
+    clearTokenCookie(res: Response) {
+        CookieService.clearCookie(res, 'token');
     }
 };
 
