@@ -6,7 +6,7 @@
     "dev": "nodemon src/index.ts",
     "start": "node dist/index.js",
     "prettier": "prettier --write .",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +21,13 @@
     "prettier": "^3.5.2"
   },
   "devDependencies": {
-    "@types/node": "^22.13.5"
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.5",
+    "husky": "^9.1.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
   }
 }
