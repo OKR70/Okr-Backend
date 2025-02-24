@@ -18,9 +18,14 @@
     "mongoose": "^8.10.1",
     "mongosh": "^2.4.0",
     "nodemon": "^3.1.9",
-    "prettier": "^3.5.2"
+    "prettier": "^3.5.2",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.5"
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.13.5",
+    "@types/uuid": "^10.0.0",
+    "ts-node": "^10.9.2"
   }
 }
