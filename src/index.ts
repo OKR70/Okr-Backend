@@ -4,7 +4,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
-//import cookieParser from 'cookie-parser';
+import swaggerJsdoc from 'swagger-jsdoc';
+import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
 //import expressUseragent from 'express-useragent';
 
 /*
@@ -40,6 +42,29 @@ process.on('uncaughtException', (exception) => console.log(`ERROR:`, exception))
 
 // При использовании Nginx
 app.set('trust proxy', true);
+
+// Настройка Swagger
+const options = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'OKR project API',
+            version: '1.0.0',
+            description: 'API documentation for OKR project',
+        },
+        servers: [
+            {
+                url: `http://localhost:${HTTP_PORT}`,
+            },
+        ],
+    },
+    apis: ['./src/routes/*.ts'], // Путь к файлам с маршрутами
+};
+
+app.use(cookieParser());
+
+const specs = swaggerJsdoc(options);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Найстрока, если front-end на другом сервере
 app.use(cors({
