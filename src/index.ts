@@ -4,10 +4,10 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
-//import cookieParser from 'cookie-parser';
-//import expressUseragent from 'express-useragent';
 import swaggerJsdoc from 'swagger-jsdoc';
+import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
+//import expressUseragent from 'express-useragent';
 
 /*
  * Главный файл
@@ -60,7 +60,9 @@ const options = {
     },
     apis: ['./src/routes/*.ts'], // Путь к файлам с маршрутами
 };
-  
+
+app.use(cookieParser());
+
 const specs = swaggerJsdoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 

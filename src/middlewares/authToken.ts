@@ -3,7 +3,7 @@ import {
     Response,
     NextFunction
 } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { JsonWebTokenError } from 'jsonwebtoken';
 import UserModel from '../models/user';
 import TokenService from '../services/token';
 
@@ -19,15 +19,15 @@ const {
 
 export const authToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const authHeader = req.headers['Authorization'];
-        const token = authHeader && typeof authHeader === 'string' ? authHeader.split(' ')[1] : undefined;
+        const token = req.cookies?.token
+        console.log(req.cookies)
 
         if (!token) {
             res.status(401).json({ message: 'Токен не предоставлен' });
             return;
         }
 
-        jwt.verify(token, JWT_TOKEN_SECRET, async (err, payload: any) => {
+        jwt.verify(token, JWT_TOKEN_SECRET, async (err: JsonWebTokenError | null, payload: any) => {
             if (err) {
                 if (err.name === 'TokenExpiredError') {
                     return res.status(401).json({ message: 'Jwt token истек' });

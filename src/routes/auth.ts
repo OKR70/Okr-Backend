@@ -14,6 +14,43 @@ const router = express.Router();
  * Авторизация
  */
 
+router.post(
+    '/register',
+    validateEmailAndPassword,
+    async (req: Request, res: Response): Promise<any> => {
+    const {
+        name,
+        role,
+        login,
+        surname,
+        password,
+    } = req.body;
+
+    try {
+
+        // Проверяем пароль
+        const hashedPassword = PasswordService.hashPassword(password);
+
+        // Создаем нового пользователя
+        const newUser = await new UserModel({
+            name,
+            surname,
+            login,
+            password: hashedPassword,
+            role
+        }).save();
+        
+        // Генерируем токены
+        const token = await TokenService.generateToken(newUser._id.toString());
+        
+        TokenService.setTokenCookie(res, token);
+
+        return res.status(204).json();
+    } catch (err) {
+        return res.status(500).json({ message: err });
+    }
+});
+
 /*
  * Роут для авторизации пользователя
  */
@@ -44,7 +81,7 @@ router.post(
         const token = await TokenService.generateToken(user._id.toString());
         
         TokenService.setTokenCookie(res, token);
-        return res.status(204);
+        return res.status(204).json();
     } catch (err) {
         return res.status(500).json({ message: err });
     }
@@ -61,7 +98,7 @@ router.post(
         // Очищаем cookie
         TokenService.clearTokenCookie(res);
 
-        return res.status(200);
+        return res.status(204).json();
     } catch (err) {
         return res.status(500).json({ message: err });
     }
