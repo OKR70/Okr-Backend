@@ -14,7 +14,7 @@ import {
  */
 
 export const validateEmailAndPassword: Array<ValidationChain | ((req: Request, res: Response, next: NextFunction) => void)> = [
-    body('email')
+    body('login')
         .isEmail()
         .withMessage('Некорректный email')
         .normalizeEmail(),

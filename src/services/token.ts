@@ -61,7 +61,7 @@ const TokenService = {
     // Установка cookie
     setTokenCookie(res: Response, token: string) {
         const maxAge = parseExpirationTime(JWT_TOKEN_EXPIRES_IN);
-
+        
         CookieService.setCookie(res, 'token', token, maxAge);
     },
 
