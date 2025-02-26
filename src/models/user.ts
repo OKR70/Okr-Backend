@@ -16,11 +16,11 @@ export interface IUser extends Document {
     surname: string // Фамилия пользователя
     login: string
     password: string
-    role: "dean" | "professor" | "student"; /* Роль пользователя
-                                             * Деканат (dean) - возможность одобрить заявку на пропуск, назначить роли преподавателю
-                                             * Преподаватель (professor) - возможность смотреть все заявки на пропуски?
-                                             * Студент (student) - создать/редактировать заявку на пропуск, просматривать свои заявки на пропуск
-                                             */
+    role: ("dean" | "professor" | "student")[]; /* Роль пользователя
+                                                * Деканат (dean) - возможность одобрить заявку на пропуск, назначить роли преподавателю
+                                                * Преподаватель (professor) - возможность смотреть все заявки на пропуски?
+                                                * Студент (student) - создать/редактировать заявку на пропуск, просматривать свои заявки на пропуск
+                                                */
 }
 
 // Схема
@@ -44,9 +44,14 @@ const userSchema: Schema<IUser> = new Schema(
             required: true
         },
         role: { 
-            type: String,
+            type: [
+                { 
+                    type: String,
+                    enum: ["dean", "professor", "student"]
+                }
+            ],
             required: true,
-            enum: ["dean", "professor", "student"]
+            default: ["student"]
         }
     },
     {
