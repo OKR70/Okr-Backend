@@ -19,6 +19,7 @@ import swaggerUi from 'swagger-ui-express';
 // Импортирует роуты
 import { AuthRouter } from './routes/auth';
 import { NotFoundRouter } from './routes/notFound';
+import userRoutes from './routes/userRoutes';
 
 // Загружаем переменные окружения из .env файла
 dotenv.config();
@@ -78,6 +79,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const apiRouter = express.Router();
 
 apiRouter.use('/auth', AuthRouter);
+apiRouter.use('/users', userRoutes);
 
 // Чтобы все запросы начинались с /api
 app.use('/api', apiRouter);
