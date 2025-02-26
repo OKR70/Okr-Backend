@@ -16,7 +16,7 @@ export interface IUser extends Document {
     _id: Types.ObjectId;
     name: string // Имя пользователя
     surname: string // Фамилия пользователя
-    login: string
+    email: string
     password: string
     role: Role[]; /* Роль пользователя
                    * Деканат (dean) - возможность одобрить заявку на пропуск, назначить роли преподавателю
@@ -36,7 +36,7 @@ const userSchema: Schema<IUser> = new Schema(
             type: String,
             required: true
         },
-        login: {
+        email: {
             type: String,
             unique: true,
             required: true

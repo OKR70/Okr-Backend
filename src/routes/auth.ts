@@ -20,7 +20,7 @@ router.post(
     async (req: Request, res: Response): Promise<any> => {
     const {
         name,
-        login,
+        email,
         surname,
         password,
     } = req.body;
@@ -34,7 +34,7 @@ router.post(
         const newUser = await new UserModel({
             name,
             surname,
-            login,
+            email,
             password: hashedPassword
         }).save();
         
