@@ -3,19 +3,22 @@ import {
     Response,
     NextFunction
 } from 'express';
+import { Role } from '../consts/consts';
 
 /*
  * Проверка наличия роли у пользователя
  */
 
-export const hasRole = (...roles: string[]) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        for (const role of roles) {
-            if (req.user && role === req.user.role) {
-                return next();
+export const hasRole = (...roles: Role[]) => {
+    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        if (req.user) {
+            for (const role of roles) {
+                    if (req.user.role.includes(role)) {
+                    return next();
+                }
             }
         }
-
-        return res.status(403).json({ error: 'Недостаточно прав' });
+        res.status(403).json({ error: 'Недостаточно прав' });
+        return;
     };
 };

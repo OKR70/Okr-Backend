@@ -20,8 +20,7 @@ router.post(
     async (req: Request, res: Response): Promise<any> => {
     const {
         name,
-        role,
-        login,
+        email,
         surname,
         password,
     } = req.body;
@@ -35,9 +34,8 @@ router.post(
         const newUser = await new UserModel({
             name,
             surname,
-            login,
-            password: hashedPassword,
-            role
+            email,
+            password: hashedPassword
         }).save();
         
         // Генерируем токены
@@ -45,7 +43,9 @@ router.post(
         
         TokenService.setTokenCookie(res, token);
 
-        return res.status(204).json();
+        return res.status(201).json({
+            user: newUser
+        });
     } catch (err) {
         return res.status(500).json({ message: err });
     }
@@ -81,7 +81,9 @@ router.post(
         const token = await TokenService.generateToken(user._id.toString());
         
         TokenService.setTokenCookie(res, token);
-        return res.status(204).json();
+        return res.status(201).json({
+            user: user
+        });
     } catch (err) {
         return res.status(500).json({ message: err });
     }
