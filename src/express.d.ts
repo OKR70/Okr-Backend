@@ -9,7 +9,7 @@ declare global {
     namespace Express {
         interface Request { // Запрос
             user?: IUser;
-            file?: IGridFsFile;
+            //file?: (Multer.File | undefined) as (File | undefined);
         }
         interface Response { // Ответ
             cookie(name: string, value: string, options?: any): this;

@@ -22,7 +22,7 @@ router.post(
     '/create',
     authToken,
     hasRole('student'),
-    uploadFile,
+    //uploadFile,
     async (req: Request, res: Response): Promise<any> => {
     const {
         type,
@@ -53,7 +53,7 @@ router.post(
         },
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        ...(req.file && { documentId: req.file.id })
+        //...(req.file && { documentId: (req.file as any).id })
     });
     
     try {
