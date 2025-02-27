@@ -43,7 +43,9 @@ router.post(
         
         TokenService.setTokenCookie(res, token);
 
-        return res.status(204).json();
+        return res.status(201).json({
+            user: newUser
+        });
     } catch (err) {
         return res.status(500).json({ message: err });
     }
@@ -79,7 +81,9 @@ router.post(
         const token = await TokenService.generateToken(user._id.toString());
         
         TokenService.setTokenCookie(res, token);
-        return res.status(204).json();
+        return res.status(201).json({
+            user: user
+        });
     } catch (err) {
         return res.status(500).json({ message: err });
     }
