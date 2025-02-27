@@ -40,18 +40,32 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
 
+        const role = req.query.role as string | undefined;
+        const search = req.query.search as string | undefined;
+
         if (page < 1 || limit < 1) {
             res.status(400).json({ message: 'Параметры page и limit должны быть положительными числами' });
             return;
         }
 
-        // Запрос с пагинацией
-        const users = await UserModel.find({})
-            .select('-password')
-            .skip((page - 1) * limit)
+        const query: any = {};
+
+        if (role) {
+            query.role = role;
+        }
+
+        if (search) {
+            query.$or = [
+                { fullname: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const users = await UserModel.find(query)
+            .select('-password') 
+            .skip((page - 1) * limit) 
             .limit(limit);
 
-        const totalUsers = await UserModel.countDocuments({});
+        const totalUsers = await UserModel.countDocuments(query);
         const totalPages = Math.ceil(totalUsers / limit);
 
         if (page > totalPages) {
@@ -65,7 +79,7 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
                 page,
                 limit,
                 totalUsers,
-                totalPages: totalPages,
+                totalPages,
             },
         });
     } catch (error) {
