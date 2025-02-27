@@ -20,7 +20,6 @@ router.post(
     async (req: Request, res: Response): Promise<any> => {
     const {
         name,
-        role,
         login,
         surname,
         password,
@@ -36,8 +35,7 @@ router.post(
             name,
             surname,
             login,
-            password: hashedPassword,
-            role
+            password: hashedPassword
         }).save();
         
         // Генерируем токены
