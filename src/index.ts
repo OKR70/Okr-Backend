@@ -26,7 +26,7 @@ dotenv.config();
 
 const app = express();
 const {
-    HTTP_PORT,
+    PORT,
     DATABASE_URL
 } = process.env;
 
@@ -55,7 +55,7 @@ const options = {
         },
         servers: [
             {
-                url: `http://localhost:${HTTP_PORT}`,
+                url: `http://localhost:${PORT}`,
             },
         ],
     },
@@ -88,6 +88,6 @@ app.use('/api', apiRouter);
 app.use('*', NotFoundRouter);
 
 // Запуск сервера
-app.listen(HTTP_PORT, () => {
-    console.log(`Server is running on http://localhost:${HTTP_PORT}`);
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
