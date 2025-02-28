@@ -19,9 +19,8 @@ router.post(
     validateEmailAndPassword,
     async (req: Request, res: Response): Promise<any> => {
     const {
-        name,
-        email,
-        surname,
+        login,
+        fullname,
         password,
     } = req.body;
 
@@ -32,9 +31,8 @@ router.post(
 
         // Создаем нового пользователя
         const newUser = await new UserModel({
-            name,
-            surname,
-            email,
+            login,
+            fullname,
             password: hashedPassword
         }).save();
         
@@ -59,13 +57,13 @@ router.post(
     validateEmailAndPassword,
     async (req: Request, res: Response): Promise<any> => {
     const {
-        email,
+        login,
         password
     } = req.body;
 
     try {
         // Находим пользователя по email
-        const user = await UserModel.findOne({ email });
+        const user = await UserModel.findOne({ login });
 
         if (!user) {
             return res.status(404).json({ message: 'Пользователь не найден' });
