@@ -1,21 +1,7 @@
-import {
-    Types,
-    Schema,
-    Document
-} from 'mongoose';
-import { database } from '../consts/database';
-
-/*
- * Модель пользователя
- */
-
-// Интерфейс
-export interface IAdmin extends Document {
-    _id: Types.ObjectId;
-    login: string
-    password: string
-}
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = require("mongoose");
+const database_1 = require("../consts/database");
 /**
  * @swagger
  * components:
@@ -51,24 +37,35 @@ export interface IAdmin extends Document {
  *         - password
  *         - role
  */
-
 // Схема
-const adminSchema: Schema<IAdmin> = new Schema(
-    {
-        login: {
-            type: String,
-            unique: true,
-            required: true
-        },
-        password: {
-            type: String,
-            required: true
-        }
+const userSchema = new mongoose_1.Schema({
+    fullname: {
+        type: String,
+        required: true
     },
-    {
-        versionKey: false
+    group: String,
+    login: {
+        type: String,
+        unique: true,
+        required: true
+    },
+    password: {
+        type: String,
+        required: true
+    },
+    role: {
+        type: [
+            {
+                type: String,
+                enum: ["dean", "professor", "student"]
+            }
+        ],
+        required: true,
+        default: ["student"]
     }
-);
-
-const AdminModel = database.model<IAdmin>('Admin', adminSchema);
-export default AdminModel;
+}, {
+    versionKey: false
+});
+const UserModel = database_1.database.model('User', userSchema);
+exports.default = UserModel;
+//# sourceMappingURL=user.js.map

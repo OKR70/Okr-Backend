@@ -3,6 +3,7 @@ import express, {
     Response
 } from 'express';
 import UserModel from '../models/user';
+import AdminModel from '../models/admin';
 import TokenService from '../services/token';
 import PasswordService from '../services/password';
 import { authToken } from '../middlewares/authToken';
@@ -22,28 +23,41 @@ router.post(
         login,
         fullname,
         password,
+        isAdmin
     } = req.body;
 
     try {
-
+        const existingUser = await UserModel.findOne({ login });
+        const existingAdmin = await AdminModel.findOne({ login });
+        if (existingUser || existingAdmin) {
+            return res.status(409).json({ message: "Пользователь с таким login уже существует" })
+        }
+        
         // Проверяем пароль
         const hashedPassword = PasswordService.hashPassword(password);
 
         // Создаем нового пользователя
-        const newUser = await new UserModel({
-            login,
-            fullname,
-            password: hashedPassword
-        }).save();
-        
-        // Генерируем токены
+        let newUser;
+        if (!isAdmin) {
+            newUser = new UserModel({
+                login,
+                fullname,
+                password: hashedPassword
+            })
+        } else {
+            newUser = new AdminModel({
+                login,
+                password: hashedPassword
+            })
+        }
+        await newUser.save();
+
+        // Генерируем токен
         const token = await TokenService.generateToken(newUser._id.toString());
         
         TokenService.setTokenCookie(res, token);
 
-        return res.status(201).json({
-            user: newUser
-        });
+        return res.status(201).json({ user: newUser });
     } catch (err) {
         return res.status(500).json({ message: err });
     }
@@ -58,13 +72,19 @@ router.post(
     async (req: Request, res: Response): Promise<any> => {
     const {
         login,
-        password
+        isAdmin,
+        password,
     } = req.body;
 
     try {
+        let user;
         // Находим пользователя по email
-        const user = await UserModel.findOne({ login });
-
+        if (!isAdmin) {
+            user = await UserModel.findOne({ login });
+        } else {
+            user = await AdminModel.findOne({ login });
+        }
+        
         if (!user) {
             return res.status(404).json({ message: 'Пользователь не найден' });
         }
@@ -75,13 +95,11 @@ router.post(
             return res.status(401).json({ message: 'Неверный пароль' });
         }
 
-        // Генерируем токены
+        // Генерируем токен
         const token = await TokenService.generateToken(user._id.toString());
         
         TokenService.setTokenCookie(res, token);
-        return res.status(201).json({
-            user: user
-        });
+        return res.status(201).json({ user: user });
     } catch (err) {
         return res.status(500).json({ message: err });
     }
