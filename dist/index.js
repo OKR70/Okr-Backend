@@ -25,7 +25,9 @@ const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 // Загружаем переменные окружения из .env файла
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-const { HTTP_PORT, DATABASE_URL } = process.env;
+const { DATABASE_URL } = process.env;
+const HTTP_PORT = process.env.HTTP_PORT;
+const HOST = process.env.HOST || 'localhost';
 // Подключение к базе данных
 mongoose_1.default.set('strictQuery', false);
 mongoose_1.default.connect(DATABASE_URL);
@@ -71,7 +73,7 @@ app.use('/api', apiRouter);
 // Обработка страниц 404
 app.use('*', notFound_1.NotFoundRouter);
 // Запуск сервера
-app.listen(HTTP_PORT, () => {
+app.listen(HTTP_PORT, HOST, () => {
     console.log(`Server is running on http://localhost:${HTTP_PORT}`);
 });
 //# sourceMappingURL=index.js.map

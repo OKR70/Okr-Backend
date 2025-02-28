@@ -26,9 +26,11 @@ dotenv.config();
 
 const app = express();
 const {
-    PORT,
     DATABASE_URL
 } = process.env;
+
+const HTTP_PORT = process.env.HTTP_PORT as unknown as number;
+const HOST = process.env.HOST || 'localhost';
 
 // Подключение к базе данных
 mongoose.set('strictQuery', false);
@@ -55,7 +57,7 @@ const options = {
         },
         servers: [
             {
-                url: `http://localhost:${PORT}`,
+                url: `http://localhost:${HTTP_PORT}`,
             },
         ],
     },
@@ -88,6 +90,6 @@ app.use('/api', apiRouter);
 app.use('*', NotFoundRouter);
 
 // Запуск сервера
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(HTTP_PORT, HOST, () => {
+    console.log(`Server is running on http://localhost:${HTTP_PORT}`);
 });
