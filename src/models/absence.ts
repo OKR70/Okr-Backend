@@ -14,7 +14,11 @@ export interface IAbsence extends Document {
     status: 'pending' | 'approved' | 'rejected';
     startDate: Date;
     endDate: Date;
-    documentId?: string; // для учебных
+    document?: {
+        filename: string;
+        data: Buffer;
+        contentType: string;
+    };
     statementInDeanery?: boolean; // для семейных
     estimatedEndDate?: Date; // для больничных
 }
@@ -49,7 +53,11 @@ const absenceSchema = new Schema<IAbsence>({
         type: Date,
         required: true
     },
-    documentId: String,
+    document: {
+        filename: String,
+        data: Buffer,
+        contentType: String
+    },
     statementInDeanery: Boolean,
     estimatedEndDate: Date
 });

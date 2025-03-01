@@ -3,9 +3,10 @@ import {
     Response,
     NextFunction
 } from 'express';
-import jwt, { JsonWebTokenError } from 'jsonwebtoken';
+import AdminModel from '../models/admin';
 import UserModel from '../models/user';
 import TokenService from '../services/token';
+import jwt, { JsonWebTokenError } from 'jsonwebtoken';
 
 const {
     JWT_TOKEN_SECRET
@@ -34,18 +35,28 @@ export const authToken = async (req: Request, res: Response, next: NextFunction)
                 return res.status(403).json({ message: 'Недействительный токен' });
             }
 
-            const user = await UserModel.findById(payload.userId);
+            let admin;
+            const user = await UserModel.findById(payload.userId).lean();
             if (!user) {
-                return res.status(404).json({ message: 'Пользователь не найден' });
+                admin = await AdminModel.findById(payload.userId).lean();
+                if (!admin) {
+                    return res.status(404).json({ message: 'Пользователь не найден' });
+                }
             }
-
+            
             const isRevoked = await TokenService.checkRevoked(payload['jti']);
             if (isRevoked) {
                 TokenService.revokeAllTokensForUser(payload.userId);
                 return res.status(401).json({ message: 'Токен был отозван' });
             }
             
-            req.user = user;
+            if (!admin) {
+                delete user!.password;
+                req.user = user!;
+            } else {
+                delete admin!.password;
+                req.admin = admin!;
+            }
 
             next();
         });

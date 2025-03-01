@@ -15,6 +15,31 @@ const router = express.Router();
  * Авторизация
  */
 
+/*
+ * Получить сессию пользователя
+ */
+router.get(
+    '/getSession',
+    authToken,
+    async (req: Request, res: Response): Promise<any> => {
+    try {
+        let user;
+        if (req.user) {
+            user = await UserModel.findOne({ _id: req.user._id }).lean();
+        } else {
+            user = await AdminModel.findOne({ _id: req.admin!._id }).lean();
+        }
+
+        delete user?.password;
+        return res.status(200).json({ user });
+    } catch (err) {
+        return res.status(500).json({ message: 'Ошибка сервера' });
+    }
+})
+
+/*
+ * Регистрация
+ */
 router.post(
     '/register',
     validateEmailAndPassword,
@@ -103,7 +128,7 @@ router.post(
         const token = await TokenService.generateToken(user._id.toString());
         
         TokenService.setTokenCookie(res, token);
-        return res.status(200).json({ user: user });
+        return res.status(200).json({ user });
     } catch (err) {
         return res.status(500).json({ message: err });
     }
