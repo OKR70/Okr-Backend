@@ -1,9 +1,18 @@
 // import { GridFsStorage } from 'multer-gridfs-storage';
+// import { GridFsStorage } from 'multer-gridfs-storage';
 
 // /*
 //  * Настройка GridFS
 //  */
+// /*
+//  * Настройка GridFS
+//  */
 
+// const {
+//     DATABASE_URL
+// } = process.env as {
+//     DATABASE_URL: string
+// };
 // const {
 //     DATABASE_URL
 // } = process.env as {

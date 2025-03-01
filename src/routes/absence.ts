@@ -7,7 +7,7 @@ import UserModel from '../models/user';
 import AbsenceModel from '../models/absence';
 import { hasRole } from '../middlewares/hasRole';
 import { authToken } from '../middlewares/authToken';
-import { uploadFile } from '../middlewares/uploadFile'
+// import { uploadFile } from '../middlewares/uploadFile'
 
 /*
  * Заявки на пропуски
@@ -22,7 +22,7 @@ router.post(
     '/create',
     authToken,
     hasRole('student'),
-    uploadFile,
+    // uploadFile,
     async (req: Request, res: Response): Promise<any> => {
     const {
         type,
