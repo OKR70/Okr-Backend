@@ -18,6 +18,7 @@ import swaggerUi from 'swagger-ui-express';
 
 // Импортирует роуты
 import { AuthRouter } from './routes/auth';
+import { AbsenceRouter } from './routes/absence';
 import { NotFoundRouter } from './routes/notFound';
 import userRoutes from './routes/userRoutes';
 
@@ -80,6 +81,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const apiRouter = express.Router();
 
+apiRouter.use('/absence', AbsenceRouter);
 apiRouter.use('/auth', AuthRouter);
 apiRouter.use('/users', userRoutes);
 
