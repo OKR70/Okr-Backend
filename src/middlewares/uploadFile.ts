@@ -1,10 +1,16 @@
-// import FileUploadService from '../services/upload';
+import { IncomingForm } from 'formidable';
 
-// export const uploadFile = async (req: any, res: any, next: any) => {
-//     try {
-//         FileUploadService.uploadFile(req, res, next);
-//     } catch (error) {
-//         console.error('Ошибка при загрузке файла:', error);
-//         res.status(500).json({ message: 'Ошибка при загрузке файла' });
-//     }
-// };
+export const uploadFile = (req: any, res: any, next: any) => {
+    const form = new IncomingForm();
+    form.parse(req, (err, fields, files) => {
+        if (err) {
+            console.error('Ошибка парсинга файла:', err);
+            return res.status(500).json({ message: 'Ошибка парсинга файла' });
+        }
+
+        req.body = fields;
+        req.files = files;
+
+        next();
+    });
+};

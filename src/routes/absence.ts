@@ -36,9 +36,9 @@ router.post(
         return res.status(400).json({ message: 'Пропущено одно или несколько из обязательных полей' });
     }
 
-    // if (type === 'educational' && !req.file) {
-    //     return res.status(400).json({ message: 'Документ обязателен для учебной заявки' });
-    // }
+    if (type === 'educational' && !req.files?.document) {
+        return res.status(400).json({ message: 'Документ обязателен для учебной заявки' });
+    }
 
     const {
         _id,
@@ -53,9 +53,15 @@ router.post(
         },
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        // ...(req.file && { documentId: (req.file as any).id })
+        ...(req.files?.document && {
+            document: {
+                filename: req.files.document.name,
+                data: req.files.document.data,
+                contentType: req.files.document.type
+            }
+        })
     });
-    
+
     try {
         switch (type) {
             case 'medical':

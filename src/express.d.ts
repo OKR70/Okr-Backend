@@ -1,4 +1,5 @@
 import { IUser } from './models/user';
+import { IAdmin } from './models/admin';
 import { IGridFsFile } from './consts/consts'
 
 /*
@@ -9,7 +10,8 @@ declare global {
     namespace Express {
         interface Request { // Запрос
             user?: IUser;
-            //file?: (Multer.File | undefined) as (File | undefined);
+            admin?: IAdmin;
+            files?: { [key: string]: any };
         }
         interface Response { // Ответ
             cookie(name: string, value: string, options?: any): this;
