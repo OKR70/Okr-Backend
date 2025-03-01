@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "typeRoots": ["../node_modules/@types", "./src/express.d.ts"],
+    "lib": ["es2022", "esnext.disposable"],
     "esModuleInterop": true,
     "target": "ES6",
     "module": "CommonJS",
