@@ -16,7 +16,7 @@ export interface IUser extends Document {
     fullname: String, // ФИО пользователя
     group?: string,
     login: string,
-    password: string
+    password?: string
     role: Role[]; /* Роль пользователя
                    * Деканат (dean) - возможность одобрить заявку на пропуск, назначить роли преподавателю
                    * Преподаватель (professor) - возможность смотреть все заявки на пропуски?
@@ -73,10 +73,7 @@ const userSchema: Schema<IUser> = new Schema(
             unique: true,
             required: true
         },
-        password: {
-            type: String,
-            required: true
-        },
+        password: String,
         role: { 
             type: [
                 { 

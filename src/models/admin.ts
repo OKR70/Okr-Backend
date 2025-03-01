@@ -13,7 +13,7 @@ import { database } from '../consts/database';
 export interface IAdmin extends Document {
     _id: Types.ObjectId;
     login: string
-    password: string
+    password?: string
 }
 
 /**
@@ -60,10 +60,7 @@ const adminSchema: Schema<IAdmin> = new Schema(
             unique: true,
             required: true
         },
-        password: {
-            type: String,
-            required: true
-        }
+        password: String
     },
     {
         versionKey: false

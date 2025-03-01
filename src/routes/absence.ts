@@ -7,7 +7,7 @@ import UserModel from '../models/user';
 import AbsenceModel from '../models/absence';
 import { hasRole } from '../middlewares/hasRole';
 import { authToken } from '../middlewares/authToken';
-// import { uploadFile } from '../middlewares/uploadFile'
+import { uploadFile } from '../middlewares/uploadFile'
 
 /*
  * Заявки на пропуски
@@ -22,7 +22,7 @@ router.post(
     '/create',
     authToken,
     hasRole('student'),
-    //uploadFile,
+    uploadFile,
     async (req: Request, res: Response): Promise<any> => {
     const {
         type,
@@ -36,9 +36,9 @@ router.post(
         return res.status(400).json({ message: 'Пропущено одно или несколько из обязательных полей' });
     }
 
-    // if (type === 'educational' && !req.file) {
-    //     return res.status(400).json({ message: 'Документ обязателен для учебной заявки' });
-    // }
+    if (type === 'educational' && !req.file) {
+        return res.status(400).json({ message: 'Документ обязателен для учебной заявки' });
+    }
 
     const {
         _id,
@@ -53,7 +53,7 @@ router.post(
         },
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        //...(req.file && { documentId: (req.file as any).id })
+        ...(req.file && { documentId: (req.file as any).id })
     });
     
     try {
@@ -79,7 +79,7 @@ router.post(
  * Получение всех заявок на пропуск
  */
 router.get(
-    '/all',
+    '/',
     authToken,
     async (req: Request, res: Response) => {
         try {

@@ -42,15 +42,14 @@ export const authToken = async (req: Request, res: Response, next: NextFunction)
             const isRevoked = await TokenService.checkRevoked(payload['jti']);
             if (isRevoked) {
                 TokenService.revokeAllTokensForUser(payload.userId);
-                throw new Error('Токен был отозван');
+                return res.status(401).json({ message: 'Токен был отозван' });
             }
-
+            
             req.user = user;
 
             next();
         });
     } catch (error) {
-        console.error('Ошибка при проверке токена:', error);
         res.status(500).json({ message: 'Ошибка сервера' });
         return;
     }

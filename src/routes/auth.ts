@@ -39,19 +39,23 @@ router.post(
         // Создаем нового пользователя
         let newUser;
         if (!isAdmin) {
-            newUser = new UserModel({
-                login,
-                fullname,
-                password: hashedPassword
-            })
+            newUser = (
+                await UserModel.create({
+                    login,
+                    fullname,
+                    password: hashedPassword
+                })
+            ).toObject();
         } else {
-            newUser = new AdminModel({
-                login,
-                password: hashedPassword
-            })
+            newUser = (
+                await AdminModel.create({
+                    login,
+                    password: hashedPassword
+                })
+            ).toObject();
         }
-        await newUser.save();
-
+        delete newUser.password;
+        
         // Генерируем токен
         const token = await TokenService.generateToken(newUser._id.toString());
         
@@ -72,21 +76,19 @@ router.post(
     async (req: Request, res: Response): Promise<any> => {
     const {
         login,
-        isAdmin,
         password,
     } = req.body;
 
     try {
         let user;
         // Находим пользователя по email
-        if (!isAdmin) {
-            user = await UserModel.findOne({ login });
-        } else {
-            user = await AdminModel.findOne({ login });
-        }
+        user = await UserModel.findOne({ login }).lean();
         
         if (!user) {
-            return res.status(404).json({ message: 'Пользователь не найден' });
+            user = await AdminModel.findOne({ login }).lean();
+            if (!user) {
+                return res.status(404).json({ message: 'Пользователь не найден' });
+            }
         }
 
         // Проверяем пароль
@@ -95,11 +97,13 @@ router.post(
             return res.status(401).json({ message: 'Неверный пароль' });
         }
 
+        delete user.password;
+
         // Генерируем токен
         const token = await TokenService.generateToken(user._id.toString());
         
         TokenService.setTokenCookie(res, token);
-        return res.status(201).json({ user: user });
+        return res.status(200).json({ user: user });
     } catch (err) {
         return res.status(500).json({ message: err });
     }

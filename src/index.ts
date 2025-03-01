@@ -18,6 +18,7 @@ import swaggerUi from 'swagger-ui-express';
 
 // Импортирует роуты
 import { AuthRouter } from './routes/auth';
+import { AbsenceRouter } from './routes/absence';
 import { NotFoundRouter } from './routes/notFound';
 import userRoutes from './routes/userRoutes';
 
@@ -26,7 +27,7 @@ dotenv.config();
 
 const app = express();
 const {
-    PORT,
+    HTTP_PORT,
     DATABASE_URL
 } = process.env;
 
@@ -55,7 +56,7 @@ const options = {
         },
         servers: [
             {
-                url: `http://localhost:${PORT}`,
+                url: `http://localhost:${HTTP_PORT}`,
             },
         ],
     },
@@ -78,6 +79,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const apiRouter = express.Router();
 
+apiRouter.use('/absence', AbsenceRouter);
 apiRouter.use('/auth', AuthRouter);
 apiRouter.use('/users', userRoutes);
 
@@ -88,6 +90,6 @@ app.use('/api', apiRouter);
 app.use('*', NotFoundRouter);
 
 // Запуск сервера
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(HTTP_PORT, () => {
+    console.log(`Server is running on http://localhost:${HTTP_PORT}`);
 });
