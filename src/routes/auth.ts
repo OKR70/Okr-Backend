@@ -19,7 +19,7 @@ const router = express.Router();
  * Получить сессию пользователя
  */
 router.get(
-    '/getSession',
+    '/session',
     authToken,
     async (req: Request, res: Response): Promise<any> => {
     try {
