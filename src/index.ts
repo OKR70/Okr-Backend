@@ -21,6 +21,7 @@ import { AuthRouter } from './routes/auth';
 import { AbsenceRouter } from './routes/absence';
 import { NotFoundRouter } from './routes/notFound';
 import userRoutes from './routes/userRoutes';
+import rolesRoutes from './routes/rolesRoutes';
 
 // Загружаем переменные окружения из .env файла
 dotenv.config();
@@ -84,6 +85,7 @@ const apiRouter = express.Router();
 apiRouter.use('/absence', AbsenceRouter);
 apiRouter.use('/auth', AuthRouter);
 apiRouter.use('/users', userRoutes);
+apiRouter.use('/roles', rolesRoutes);
 
 // Чтобы все запросы начинались с /api
 app.use('/api', apiRouter);
