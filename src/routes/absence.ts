@@ -11,17 +11,13 @@ import { hasRole } from '../middlewares/hasRole';
 import { authToken } from '../middlewares/authToken';
 
 /*
- * Заявки на пропуски Протестировать первые 3 запроса
+ * Заявки на пропуски
  */
 
 const router = express.Router();
 
 /* 
  * Создание новой заявки
-    "type": "medical",
-    "endDate": "2024-12-31",
-    "startDate": "2024-12-31",
-    "statementInDeanery": ""
  */
 router.post(
     '/create',
