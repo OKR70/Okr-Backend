@@ -11,7 +11,7 @@ import { hasRole } from '../middlewares/hasRole';
 import { authToken } from '../middlewares/authToken';
 
 /*
- * Заявки на пропуски Протестировать первые 3 запроса
+ * Заявки на пропуски
  */
 
 const router = express.Router();
