@@ -3,7 +3,6 @@ import express, {
     Response
 } from 'express';
 import UserModel from '../models/user';
-import AdminModel from '../models/admin';
 import TokenService from '../services/token';
 import PasswordService from '../services/password';
 import { authToken } from '../middlewares/authToken'; 
@@ -23,17 +22,9 @@ router.get(
     authToken,
     async (req: Request, res: Response): Promise<any> => {
     try {
-        let user;
-        if (req.user) {
-            user = await UserModel.findOne({ _id: req.user._id }).lean();
-        } else {
-            user = await AdminModel.findOne({ _id: req.admin!._id }).lean();
-        }
-
-        delete user?.password;
-        return res.status(200).json({ user });
+        return res.status(200).json({ user: req.user });
     } catch (err) {
-        return res.status(500).json({ message: 'Ошибка сервера' });
+        return res.status(500).json({ message: err });
     }
 })
 
@@ -47,14 +38,12 @@ router.post(
     const {
         login,
         fullname,
-        password,
-        isAdmin
+        password
     } = req.body;
 
     try {
         const existingUser = await UserModel.findOne({ login });
-        const existingAdmin = await AdminModel.findOne({ login });
-        if (existingUser || existingAdmin) {
+        if (existingUser) {
             return res.status(409).json({ message: "Пользователь с таким login уже существует" })
         }
         
@@ -62,23 +51,14 @@ router.post(
         const hashedPassword = PasswordService.hashPassword(password);
 
         // Создаем нового пользователя
-        let newUser;
-        if (!isAdmin) {
-            newUser = (
-                await UserModel.create({
-                    login,
-                    fullname,
-                    password: hashedPassword
-                })
-            ).toObject();
-        } else {
-            newUser = (
-                await AdminModel.create({
-                    login,
-                    password: hashedPassword
-                })
-            ).toObject();
-        }
+        const newUser = (
+            await UserModel.create({
+                login,
+                fullname,
+                password: hashedPassword
+            })
+        ).toObject();
+        
         delete newUser.password;
         
         // Генерируем токен
@@ -105,15 +85,11 @@ router.post(
     } = req.body;
 
     try {
-        let user;
         // Находим пользователя по email
-        user = await UserModel.findOne({ login }).lean();
+        const user = await UserModel.findOne({ login }).lean();
         
         if (!user) {
-            user = await AdminModel.findOne({ login }).lean();
-            if (!user) {
-                return res.status(404).json({ message: 'Пользователь не найден' });
-            }
+            return res.status(404).json({ message: 'Пользователь не найден' });
         }
 
         // Проверяем пароль
@@ -151,4 +127,4 @@ router.post(
     }
 });
 
-export { router as AuthRouter };
+module.exports = router;
