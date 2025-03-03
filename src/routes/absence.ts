@@ -18,10 +18,6 @@ const router = express.Router();
 
 /* 
  * Создание новой заявки
-    "type": "medical",
-    "endDate": "2024-12-31",
-    "startDate": "2024-12-31",
-    "statementInDeanery": ""
  */
 router.post(
     '/create',
