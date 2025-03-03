@@ -5,7 +5,7 @@ import express, {
 import UserModel from '../models/user';
 import TokenService from '../services/token';
 import PasswordService from '../services/password';
-import { authToken } from '../middlewares/authToken';
+import { authToken } from '../middlewares/authToken'; 
 import { validateEmailAndPassword } from '../middlewares/validation';
 
 const router = express.Router();
