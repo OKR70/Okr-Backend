@@ -3,7 +3,6 @@ import {
     Schema,
     Document
 } from 'mongoose';
-import { Role } from '../consts/consts';
 import { database } from '../consts/database';
 
 /*
@@ -11,17 +10,10 @@ import { database } from '../consts/database';
  */
 
 // Интерфейс
-export interface IUser extends Document {
+export interface IAdmin extends Document {
     _id: Types.ObjectId;
-    fullname: String, // ФИО пользователя
-    group?: string,
-    login: string,
+    login: string
     password?: string
-    role: Role[]; /* Роль пользователя
-                   * Деканат (dean) - возможность одобрить заявку на пропуск, назначить роли преподавателю
-                   * Преподаватель (professor) - возможность смотреть все заявки на пропуски?
-                   * Студент (student) - создать/редактировать заявку на пропуск, просматривать свои заявки на пропуск
-                   */
 }
 
 /**
@@ -61,34 +53,19 @@ export interface IUser extends Document {
  */
 
 // Схема
-const userSchema: Schema<IUser> = new Schema(
+const adminSchema: Schema<IAdmin> = new Schema(
     {
-        fullname: {
-            type: String,
-            required: true
-        },
-        group: String,
         login: {
             type: String,
             unique: true,
             required: true
         },
-        password: String,
-        role: { 
-            type: [
-                { 
-                    type: String,
-                    enum: ["dean", "professor", "student"]
-                }
-            ],
-            required: true,
-            default: ["student"]
-        }
+        password: String
     },
     {
         versionKey: false
     }
 );
 
-const UserModel = database.model<IUser>('User', userSchema);
-export default UserModel;
+const AdminModel = database.model<IAdmin>('Admin', adminSchema);
+export default AdminModel;

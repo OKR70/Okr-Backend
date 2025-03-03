@@ -1,6 +1,19 @@
-import { Request, Response } from 'express';
-import UserModel from '../models/user';
-
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getUserById = exports.getAllUsers = void 0;
+const user_1 = __importDefault(require("../models/user"));
 /**
  * @swagger
  * /api/users:
@@ -31,53 +44,38 @@ import UserModel from '../models/user';
  *                   type: string
  *                   example: Произошла ошибка на сервере
  */
-
-/**
+/*
  * Получить всех пользователей
  */
-export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
+const getAllUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 10;
-
-        const roles = req.query.role ? (Array.isArray(req.query.role) ? req.query.role : [req.query.role]) : undefined;
-        const group = req.query.group as string | undefined;
-        const search = req.query.search as string | undefined;
-
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const role = req.query.role;
+        const search = req.query.search;
         if (page < 1 || limit < 1) {
             res.status(400).json({ message: 'Параметры page и limit должны быть положительными числами' });
             return;
         }
-
-        const query: any = {};
-
-        if (roles) {
-            query.role = { $in: roles };
+        const query = {};
+        if (role) {
+            query.role = role;
         }
-
-        if (group) {
-            query.group = group;
-        }
-
         if (search) {
             query.$or = [
                 { fullname: { $regex: search, $options: 'i' } }
             ];
         }
-
-        const users = await UserModel.find(query)
+        const users = yield user_1.default.find(query)
             .select('-password')
             .skip((page - 1) * limit)
             .limit(limit);
-
-        const totalUsers = await UserModel.countDocuments(query);
+        const totalUsers = yield user_1.default.countDocuments(query);
         const totalPages = Math.ceil(totalUsers / limit);
-
         if (page > totalPages) {
             res.status(404).json({ message: 'Страница не существует' });
             return;
         }
-
         res.status(200).json({
             data: users,
             pagination: {
@@ -87,15 +85,17 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
                 totalPages,
             },
         });
-    } catch (error) {
+    }
+    catch (error) {
         if (error instanceof Error) {
             res.status(500).json({ message: 'Ошибка при получении пользователей', error: error.message });
-        } else {
+        }
+        else {
             res.status(500).json({ message: 'Ошибка при получении пользователей', error: 'Неизвестная ошибка' });
         }
     }
-};
-
+});
+exports.getAllUsers = getAllUsers;
 /**
  * @swagger
  * /api/users/{id}:
@@ -141,25 +141,28 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
  *                   type: string
  *                   example: Произошла ошибка на сервере
  */
-
 /*
  * Получить пользователя по ID
  */
-export const getUserById = async (req: Request, res: Response): Promise<void> => {
+const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userId = req.params.id;
-        const user = await UserModel.findById(userId).select('-password');
-
+        const user = yield user_1.default.findById(userId).select('-password');
         if (user) {
             res.status(200).json(user);
-        } else {
+        }
+        else {
             res.status(404).json({ message: 'Пользователь не найден' });
         }
-    } catch (error) {
+    }
+    catch (error) {
         if (error instanceof Error) {
             res.status(500).json({ message: 'Ошибка при получении пользователя', error: error.message });
-        } else {
+        }
+        else {
             res.status(500).json({ message: 'Ошибка при получении пользователя', error: 'Неизвестная ошибка' });
         }
     }
-};
+});
+exports.getUserById = getUserById;
+//# sourceMappingURL=userController.js.map

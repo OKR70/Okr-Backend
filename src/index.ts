@@ -18,6 +18,7 @@ import swaggerUi from 'swagger-ui-express';
 
 // Импортирует роуты
 import { AuthRouter } from './routes/auth';
+import { AbsenceRouter } from './routes/absence';
 import { NotFoundRouter } from './routes/notFound';
 import userRoutes from './routes/userRoutes';
 
@@ -26,9 +27,11 @@ dotenv.config();
 
 const app = express();
 const {
-    HTTP_PORT,
     DATABASE_URL
 } = process.env;
+
+const HTTP_PORT = process.env.HTTP_PORT as unknown as number;
+const HOST = process.env.HOST || 'localhost';
 
 // Подключение к базе данных
 mongoose.set('strictQuery', false);
@@ -78,6 +81,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const apiRouter = express.Router();
 
+apiRouter.use('/absence', AbsenceRouter);
 apiRouter.use('/auth', AuthRouter);
 apiRouter.use('/users', userRoutes);
 
@@ -88,6 +92,6 @@ app.use('/api', apiRouter);
 app.use('*', NotFoundRouter);
 
 // Запуск сервера
-app.listen(HTTP_PORT, () => {
+app.listen(HTTP_PORT, HOST, () => {
     console.log(`Server is running on http://localhost:${HTTP_PORT}`);
 });

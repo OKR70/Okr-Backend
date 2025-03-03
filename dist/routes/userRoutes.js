@@ -1,21 +1,20 @@
-import express from 'express';
-import { getAllUsers, getUserById } from '../controllers/userController';
-import { hasRole } from '../middlewares/hasRole';
-import { authToken } from '../middlewares/authToken';
-
-const router = express.Router();
-
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const userController_1 = require("../controllers/userController");
+const router = express_1.default.Router();
 /**
  * @swagger
  * tags:
  *   name: Users
  *   description: Управление пользователями
  */
-
 /**
  * Получить всех пользователей
  */
-
 /**
  * @swagger
  * /api/users:
@@ -46,12 +45,10 @@ const router = express.Router();
  *                   type: string
  *                   example: Произошла ошибка на сервере
  */
-router.get('/', authToken, hasRole('dean', 'professor', 'student'), getAllUsers);
-
+router.get('/', userController_1.getAllUsers);
 /**
  * Получить пользователя по ID
  */
-
 /**
  * @swagger
  * /api/users/{id}:
@@ -97,6 +94,6 @@ router.get('/', authToken, hasRole('dean', 'professor', 'student'), getAllUsers)
  *                   type: string
  *                   example: Произошла ошибка на сервере
  */
-router.get('/:id', authToken, hasRole('dean', 'professor', 'student'), getUserById);
-
-export default router;
+router.get('/:id', userController_1.getUserById);
+exports.default = router;
+//# sourceMappingURL=userRoutes.js.map
