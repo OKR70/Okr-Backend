@@ -218,6 +218,8 @@ router.patch(
                 }
 
                 absence.status = status;
+            } else {
+                absence.status = 'pending';
             }
 
             if (startDate) {

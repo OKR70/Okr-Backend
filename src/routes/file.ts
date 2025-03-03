@@ -4,6 +4,7 @@ import express, {
 } from 'express';
 import * as fs from 'fs';
 import { uploadFile } from '../middlewares/uploadFile'
+import { authToken } from '../middlewares/authToken';
 
 const router = express();
 
@@ -13,6 +14,7 @@ const router = express();
 
 router.post(
     '/upload',
+    authToken,
     uploadFile,
     async (req: Request, res: Response): Promise<any> => {
         try {
@@ -32,16 +34,17 @@ router.post(
  * Загрузить документ клиенту
  */
 router.get(
-    '/:filename',
+    '/:documentName',
+    authToken,
     async (req: Request, res: Response): Promise<any> => {
         try {
-            const filename = req.params.filename;
+            const documentName = req.params.documentName;
 
             // Путь к директории с файлами
             const filesDir = './src/files';
 
             // Путь к файлу
-            const filePath = `${filesDir}/${filename}`;
+            const filePath = `${filesDir}/${documentName}`;
 
             // Проверка существования файла
             if (!fs.existsSync(filePath)) {
@@ -52,7 +55,7 @@ router.get(
             const fileBuffer = fs.readFileSync(filePath);
 
             // Возвращение файла в ответе
-            res.set("Content-Disposition", `attachment; filename="${filename}"`);
+            res.set("Content-Disposition", `attachment; filename="${documentName}"`);
             res.set("Content-Type", "application/octet-stream");
             res.send(fileBuffer);
         } catch (err) {
