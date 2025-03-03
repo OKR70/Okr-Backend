@@ -18,6 +18,7 @@ import swaggerUi from 'swagger-ui-express';
 
 // Импортирует роуты
 import userRoutes from './routes/userRoutes';
+import rolesRoutes from './routes/rolesRoutes';
 
 // Загружаем переменные окружения из .env файла
 dotenv.config();
@@ -82,6 +83,7 @@ apiRouter.use('/absence', require('./routes/absence'));
 apiRouter.use('/auth', require('./routes/auth'));
 apiRouter.use('/file', require('./routes/file'));
 apiRouter.use('/users', userRoutes);
+apiRouter.use('/roles', rolesRoutes);
 
 // Чтобы все запросы начинались с /api
 app.use('/api', apiRouter);

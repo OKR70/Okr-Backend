@@ -1,5 +1,7 @@
 import express from 'express';
 import { getAllUsers, getUserById } from '../controllers/userController';
+import { hasRole } from '../middlewares/hasRole';
+import { authToken } from '../middlewares/authToken';
 
 const router = express.Router();
 
@@ -44,7 +46,7 @@ const router = express.Router();
  *                   type: string
  *                   example: Произошла ошибка на сервере
  */
-router.get('/', getAllUsers);
+router.get('/', authToken, hasRole('dean', 'professor', 'student'), getAllUsers);
 
 /**
  * Получить пользователя по ID
@@ -95,6 +97,6 @@ router.get('/', getAllUsers);
  *                   type: string
  *                   example: Произошла ошибка на сервере
  */
-router.get('/:id', getUserById);
+router.get('/:id', authToken, hasRole('dean', 'professor', 'student'), getUserById);
 
 export default router;
