@@ -32,7 +32,7 @@ import UserModel from '../models/user';
  *                   example: Произошла ошибка на сервере
  */
 
-/*
+/**
  * Получить всех пользователей
  */
 export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
@@ -40,7 +40,8 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
 
-        const role = req.query.role as string | undefined;
+        const roles = req.query.role ? (Array.isArray(req.query.role) ? req.query.role : [req.query.role]) : undefined;
+        const group = req.query.group as string | undefined;
         const search = req.query.search as string | undefined;
 
         if (page < 1 || limit < 1) {
@@ -50,8 +51,12 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
 
         const query: any = {};
 
-        if (role) {
-            query.role = role;
+        if (roles) {
+            query.role = { $in: roles };
+        }
+
+        if (group) {
+            query.group = group;
         }
 
         if (search) {
@@ -61,8 +66,8 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
         }
 
         const users = await UserModel.find(query)
-            .select('-password') 
-            .skip((page - 1) * limit) 
+            .select('-password')
+            .skip((page - 1) * limit)
             .limit(limit);
 
         const totalUsers = await UserModel.countDocuments(query);
