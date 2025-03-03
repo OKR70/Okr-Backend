@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import UserModel from '../models/user'; // Импортируй модель пользователя
+import UserModel from '../models/user'; 
 
 /**
  * Добавить роль пользователю
@@ -22,7 +22,7 @@ export const addRoleToUser = async (req: Request, res: Response): Promise<void> 
         }
 
         // Находим пользователя и добавляем роль
-        const user = await UserModel.findById(userId);
+        const user = await UserModel.findById(userId).select('-password');
         if (!user) {
             res.status(404).json({ message: 'Пользователь не найден' });
             return;
@@ -38,6 +38,7 @@ export const addRoleToUser = async (req: Request, res: Response): Promise<void> 
         user.role.push(role);
         await user.save();
 
+        // Возвращаем пользователя без пароля
         res.status(200).json({ message: 'Роль успешно добавлена', user });
     } catch (error) {
         if (error instanceof Error) {
@@ -69,7 +70,7 @@ export const removeRoleFromUser = async (req: Request, res: Response): Promise<v
         }
 
         // Находим пользователя и удаляем роль
-        const user = await UserModel.findById(userId);
+        const user = await UserModel.findById(userId).select('-password');
         if (!user) {
             res.status(404).json({ message: 'Пользователь не найден' });
             return;
@@ -85,6 +86,7 @@ export const removeRoleFromUser = async (req: Request, res: Response): Promise<v
         user.role = user.role.filter((r) => r !== role);
         await user.save();
 
+        // Возвращаем пользователя без пароля
         res.status(200).json({ message: 'Роль успешно удалена', user });
     } catch (error) {
         if (error instanceof Error) {
