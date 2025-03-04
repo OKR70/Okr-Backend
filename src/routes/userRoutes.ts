@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllUsers, getUserById } from '../controllers/userController';
+import { getAllUsers, getUserById, updateUser } from '../controllers/userController';
 import { hasRole } from '../middlewares/hasRole';
 import { authToken } from '../middlewares/authToken';
 
@@ -98,5 +98,10 @@ router.get('/', authToken, hasRole('dean', 'professor', 'student'), getAllUsers)
  *                   example: Произошла ошибка на сервере
  */
 router.get('/:id', authToken, hasRole('dean', 'professor', 'student'), getUserById);
+
+/**
+ * Редактировать пользователя
+ */
+router.patch('/:id', authToken, hasRole('dean'), updateUser);
 
 export default router;

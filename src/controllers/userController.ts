@@ -163,3 +163,78 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
         }
     }
 };
+
+/**
+ * Редактировать пользователя
+ */
+export const updateUser = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { fullname, group, role } = req.body;
+
+        // Проверка что передан хотя бы один параметр
+        if (!fullname && !group && !role) {
+            res.status(400).json({ message: 'Необходимо указать хотя бы одно поле для обновления' });
+            return;
+        }
+
+        const user = await UserModel.findById(id).select('-password');
+        if (!user) {
+            res.status(404).json({ message: 'Пользователь не найден' });
+            return;
+        }
+
+        // Обновляем поля
+        if (fullname) user.fullname = fullname;
+        if (group) user.group = group;
+
+        // Проверка и обновление ролей
+        if (role) {
+            // Проверка, что роль является массивом
+            if (!Array.isArray(role)) {
+                res.status(400).json({ message: 'Роль должна быть передана в виде массива' });
+                return;
+            }
+
+            // Проверка на допустимые роли
+            const validRoles = ['dean', 'professor', 'student'];
+            for (const r of role) {
+                if (!validRoles.includes(r)) {
+                    res.status(400).json({ message: `Недопустимая роль: ${r}` });
+                    return;
+                }
+            }
+
+            // Проверка на роль dean
+            const hasDeanRole = user.role.includes('dean'); // Пользователь уже имеет роль dean
+            const requestHasDeanRole = role.includes('dean'); // Запрос содержит роль dean
+
+            // Если пользователь уже имеет роль dean, но запрос её не содержит
+            if (hasDeanRole && !requestHasDeanRole) {
+                res.status(400).json({ message: 'Нельзя удалить роль "dean"' });
+                return;
+            }
+
+            // Если пользователь не имеет роль dean, но запрос её содержит
+            if (!hasDeanRole && requestHasDeanRole) {
+                res.status(400).json({ message: 'Нельзя добавить роль "dean"' });
+                return;
+            }
+
+            // Обновляем роли
+            user.role = role;
+        }
+
+        // Сохраняем изменения
+        await user.save();
+
+        // Возвращаем обновленного пользователя без пароля
+        res.status(200).json({ message: 'Пользователь успешно обновлен', user });
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: 'Ошибка при обновлении пользователя', error: error.message });
+        } else {
+            res.status(500).json({ message: 'Ошибка при обновлении пользователя', error: 'Неизвестная ошибка' });
+        }
+    }
+};
