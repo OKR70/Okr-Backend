@@ -6,12 +6,27 @@ import * as fs from 'fs';
 import Fuse from 'fuse.js';
 import mongoose from 'mongoose';
 import UserModel from '../models/user';
+import FileService from '../services/file';
 import AbsenceModel from '../models/absence';
 import { hasRole } from '../middlewares/hasRole';
 import { authToken } from '../middlewares/authToken';
-
+import { v4 as uuidv4 } from 'uuid';
+import multer from 'multer';
+import path from 'path';
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, './src/files');
+    },
+    filename: (req, file, cb) => {
+      const fileExtension = path.extname(file.originalname); // Получаем расширение файла
+      const newFileName = `${uuidv4()}${fileExtension}`; // Генерируем новое имя с расширением
+      cb(null, newFileName);
+    }
+  });
+  
+const upload = multer({ storage: storage });
 /*
- * Заявки на пропуски
+ * Заявки на пропуски доделать работу с файлами изменить порядок загрузки
  */
 
 const router = express.Router();
@@ -23,37 +38,39 @@ router.post(
     '/create',
     authToken,
     hasRole('student'),
+    upload.single('document'),
     async (req: Request, res: Response): Promise<any> => {
     const {
         type,
         endDate,
         startDate,
-        documentName,
         statementInDeanery
     } = req.body;
 
-    if (!type || !startDate || (type === 'educational' && (!endDate || !documentName))) {
+    if (!type || !startDate || (type === 'educational' && (!endDate || !req.file))) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         return res.status(400).json({ message: 'Пропущено одно или несколько из обязательных полей' });
     }
 
     if (!['educational', 'family', 'medical'].includes(type)) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         return res.status(400).json({ message: 'Неправильный тип заявки на пропуск' });
     }
 
     if (endDate && startDate > endDate) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         return res.status(400).json({ message: 'Дата начала не может быть позже конца' });
     }
 
-    if (documentName) {
-        const filesDir = './src/files';
-
-        // Путь к файлу
-        const filePath = `${filesDir}/${documentName}`;
-
-        // Проверка существования файла
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ message: 'Файл не найден' });
-        }
+    let documentName;
+    if (req.file) {
+        documentName = req.file.filename;
     }
 
     const {
@@ -69,15 +86,13 @@ router.post(
         },
         startDate: new Date(startDate),
         endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        ...(documentName && {
-            documentName: documentName
-        }),
-        ...(type === 'family' && { statementInDeanery })
+        ...(documentName && { documentName }),
+        ...(type === 'family' && statementInDeanery && { statementInDeanery })
     });
 
     try {
         const absence = await newAbsence.save();
-        res.status(201).json(absence);
+        res.status(201).json({ absence });
     } catch (err) {
         res.status(500).json({ message: err });
     }

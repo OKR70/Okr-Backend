@@ -1,5 +1,4 @@
 import { IUser } from './models/user';
-import { IGridFsFile } from './consts/consts'
 
 /*
  * Глобальная настройка Express
