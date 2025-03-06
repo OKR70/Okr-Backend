@@ -65,13 +65,10 @@ const absenceSchema = new mongoose_1.Schema({
         type: Date,
         required: true
     },
-    document: {
-        filename: String,
-        data: Buffer,
-        contentType: String
-    },
-    statementInDeanery: Boolean,
-    estimatedEndDate: Date
+    documentName: String,
+    statementInDeanery: Boolean
+}, {
+    versionKey: false
 });
 const AbsenceModel = database_1.database.model('Absence', absenceSchema);
 exports.default = AbsenceModel;

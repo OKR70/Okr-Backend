@@ -2,31 +2,19 @@ import express, {
     Request,
     Response
 } from 'express';
+import path from 'path';
 import * as fs from 'fs';
 import Fuse from 'fuse.js';
+import multer from 'multer';
 import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 import UserModel from '../models/user';
-import FileService from '../services/file';
 import AbsenceModel from '../models/absence';
 import { hasRole } from '../middlewares/hasRole';
 import { authToken } from '../middlewares/authToken';
-import { v4 as uuidv4 } from 'uuid';
-import multer from 'multer';
-import path from 'path';
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, './src/files');
-    },
-    filename: (req, file, cb) => {
-      const fileExtension = path.extname(file.originalname); // Получаем расширение файла
-      const newFileName = `${uuidv4()}${fileExtension}`; // Генерируем новое имя с расширением
-      cb(null, newFileName);
-    }
-  });
-  
-const upload = multer({ storage: storage });
+
 /*
- * Заявки на пропуски доделать работу с файлами изменить порядок загрузки
+ * Заявки на пропуски
  */
 
 const router = express.Router();
