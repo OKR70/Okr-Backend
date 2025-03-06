@@ -13,6 +13,18 @@ import AbsenceModel from '../models/absence';
 import { hasRole } from '../middlewares/hasRole';
 import { authToken } from '../middlewares/authToken';
 
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, './src/files');
+    },
+    filename: (req, file, cb) => {
+      const fileExtension = path.extname(file.originalname); // Получаем расширение файла
+      const newFileName = `${uuidv4()}${fileExtension}`; // Генерируем новое имя с расширением
+      cb(null, newFileName);
+    }
+  });
+  
+const upload = multer({ storage: storage });
 /*
  * Заявки на пропуски
  */
