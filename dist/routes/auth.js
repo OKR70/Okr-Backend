@@ -12,16 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AuthRouter = void 0;
 const express_1 = __importDefault(require("express"));
 const user_1 = __importDefault(require("../models/user"));
-const admin_1 = __importDefault(require("../models/admin"));
 const token_1 = __importDefault(require("../services/token"));
 const password_1 = __importDefault(require("../services/password"));
 const authToken_1 = require("../middlewares/authToken");
 const validation_1 = require("../middlewares/validation");
 const router = express_1.default.Router();
-exports.AuthRouter = router;
 /*
  * Авторизация
  */
@@ -30,48 +27,30 @@ exports.AuthRouter = router;
  */
 router.get('/session', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let user;
-        if (req.user) {
-            user = yield user_1.default.findOne({ _id: req.user._id }).lean();
-        }
-        else {
-            user = yield admin_1.default.findOne({ _id: req.admin._id }).lean();
-        }
-        user === null || user === void 0 ? true : delete user.password;
-        return res.status(200).json({ user });
+        return res.status(200).json({ user: req.user });
     }
     catch (err) {
-        return res.status(500).json({ message: 'Ошибка сервера' });
+        return res.status(500).json({ message: err });
     }
 }));
 /*
  * Регистрация
  */
 router.post('/register', validation_1.validateEmailAndPassword, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { login, fullname, password, isAdmin } = req.body;
+    const { login, fullname, password } = req.body;
     try {
         const existingUser = yield user_1.default.findOne({ login });
-        const existingAdmin = yield admin_1.default.findOne({ login });
-        if (existingUser || existingAdmin) {
+        if (existingUser) {
             return res.status(409).json({ message: "Пользователь с таким login уже существует" });
         }
         // Проверяем пароль
         const hashedPassword = password_1.default.hashPassword(password);
         // Создаем нового пользователя
-        let newUser;
-        if (!isAdmin) {
-            newUser = (yield user_1.default.create({
-                login,
-                fullname,
-                password: hashedPassword
-            })).toObject();
-        }
-        else {
-            newUser = (yield admin_1.default.create({
-                login,
-                password: hashedPassword
-            })).toObject();
-        }
+        const newUser = (yield user_1.default.create({
+            login,
+            fullname,
+            password: hashedPassword
+        })).toObject();
         delete newUser.password;
         // Генерируем токен
         const token = yield token_1.default.generateToken(newUser._id.toString());
@@ -88,14 +67,10 @@ router.post('/register', validation_1.validateEmailAndPassword, (req, res) => __
 router.post('/login', validation_1.validateEmailAndPassword, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { login, password, } = req.body;
     try {
-        let user;
         // Находим пользователя по email
-        user = yield user_1.default.findOne({ login }).lean();
+        const user = yield user_1.default.findOne({ login }).lean();
         if (!user) {
-            user = yield admin_1.default.findOne({ login }).lean();
-            if (!user) {
-                return res.status(404).json({ message: 'Пользователь не найден' });
-            }
+            return res.status(404).json({ message: 'Пользователь не найден' });
         }
         // Проверяем пароль
         const isPasswordValid = password_1.default.comparePasswords(password, user.password);
@@ -124,4 +99,5 @@ router.post('/logout', authToken_1.authToken, (req, res) => __awaiter(void 0, vo
         return res.status(500).json({ message: err });
     }
 }));
+module.exports = router;
 //# sourceMappingURL=auth.js.map

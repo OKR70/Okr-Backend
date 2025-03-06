@@ -2,4 +2,3 @@ node_modules/**/*
 /.env
 /.husky
 /.dist
-src/swagger/docs.json

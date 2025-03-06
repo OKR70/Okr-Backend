@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authToken = void 0;
-const admin_1 = __importDefault(require("../models/admin"));
 const user_1 = __importDefault(require("../models/user"));
 const token_1 = __importDefault(require("../services/token"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -36,27 +35,17 @@ const authToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function
                 }
                 return res.status(403).json({ message: 'Недействительный токен' });
             }
-            let admin;
             const user = yield user_1.default.findById(payload.userId).lean();
             if (!user) {
-                admin = yield admin_1.default.findById(payload.userId).lean();
-                if (!admin) {
-                    return res.status(404).json({ message: 'Пользователь не найден' });
-                }
+                return res.status(404).json({ message: 'Пользователь не найден' });
             }
             const isRevoked = yield token_1.default.checkRevoked(payload['jti']);
             if (isRevoked) {
                 token_1.default.revokeAllTokensForUser(payload.userId);
                 return res.status(401).json({ message: 'Токен был отозван' });
             }
-            if (!admin) {
-                delete user.password;
-                req.user = user;
-            }
-            else {
-                delete admin.password;
-                req.admin = admin;
-            }
+            delete user.password;
+            req.user = user;
             next();
         }));
     }

@@ -17,9 +17,6 @@ import swaggerUi from 'swagger-ui-express';
 //import { authToken } from './middlewares/authToken';
 
 // Импортирует роуты
-import { AuthRouter } from './routes/auth';
-import { AbsenceRouter } from './routes/absence';
-import { NotFoundRouter } from './routes/notFound';
 import userRoutes from './routes/userRoutes';
 import rolesRoutes from './routes/rolesRoutes';
 
@@ -82,8 +79,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const apiRouter = express.Router();
 
-apiRouter.use('/absence', AbsenceRouter);
-apiRouter.use('/auth', AuthRouter);
+apiRouter.use('/absence', require('./routes/absence'));
+apiRouter.use('/auth', require('./routes/auth'));
+apiRouter.use('/file', require('./routes/file'));
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/roles', rolesRoutes);
 
@@ -91,7 +89,7 @@ apiRouter.use('/roles', rolesRoutes);
 app.use('/api', apiRouter);
 
 // Обработка страниц 404
-app.use('*', NotFoundRouter);
+app.use('*', require('./routes/notFound'));
 
 // Запуск сервера
 app.listen(HTTP_PORT, HOST, () => {
