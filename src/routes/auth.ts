@@ -11,7 +11,7 @@ import { validateEmailAndPassword } from '../middlewares/validation';
 const router = express.Router();
 
 /*
- * Авторизация
+ * Авторизация 
  */
 
 /*

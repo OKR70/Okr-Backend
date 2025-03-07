@@ -41,7 +41,7 @@ const FileService = {
             }
 
             try {
-                req.files = files;
+                req.files = files as any;
             } catch (err) {
                 return res.status(400).json({ message: err });
             }

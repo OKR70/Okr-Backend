@@ -20,6 +20,7 @@ const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 //import { authToken } from './middlewares/authToken';
 // Импортирует роуты
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
+const rolesRoutes_1 = __importDefault(require("./routes/rolesRoutes"));
 // Загружаем переменные окружения из .env файла
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -68,6 +69,7 @@ apiRouter.use('/absence', require('./routes/absence'));
 apiRouter.use('/auth', require('./routes/auth'));
 apiRouter.use('/file', require('./routes/file'));
 apiRouter.use('/users', userRoutes_1.default);
+apiRouter.use('/roles', rolesRoutes_1.default);
 // Чтобы все запросы начинались с /api
 app.use('/api', apiRouter);
 // Обработка страниц 404

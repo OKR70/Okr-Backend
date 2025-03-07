@@ -177,13 +177,13 @@ router.get(
 router.patch(
     '/:id',
     authToken,
+    upload.single('document'),
     async (req: Request, res: Response): Promise<any> => {
         try {
             const {
                 status,
                 endDate,
                 startDate,
-                documentName,
                 statementInDeanery
             } = req.body;
             
@@ -206,17 +206,9 @@ router.patch(
                 }
             }
             
-            if (documentName) {
-                const filesDir = './src/files';
-
-                // Путь к файлу
-                const filePath = `${filesDir}/${documentName}`;
-
-                // Проверка существования файла
-                if (!fs.existsSync(filePath)) {
-                    return res.status(404).json({ message: 'Файл не найден' });
-                }
-                absence.documentName = documentName;
+            let documentName;
+            if (req.file) {
+                absence.documentName = req.file.filename;
             }
 
             if (status) {
