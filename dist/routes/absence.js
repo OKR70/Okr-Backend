@@ -172,9 +172,9 @@ router.get('/', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, v
 /*
  * Изменение конкретной заявки на пропуск
  */
-router.patch('/:id', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.patch('/:id', authToken_1.authToken, upload.single('document'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { status, endDate, startDate, documentName, statementInDeanery } = req.body;
+        const { status, endDate, startDate, statementInDeanery } = req.body;
         if (endDate && startDate > endDate) {
             return res.status(400).json({ message: 'Дата начала не может быть позже конца' });
         }
@@ -189,15 +189,9 @@ router.patch('/:id', authToken_1.authToken, (req, res) => __awaiter(void 0, void
                 return res.status(403).json({ message: 'Доступ запрещен' });
             }
         }
-        if (documentName) {
-            const filesDir = './src/files';
-            // Путь к файлу
-            const filePath = `${filesDir}/${documentName}`;
-            // Проверка существования файла
-            if (!fs.existsSync(filePath)) {
-                return res.status(404).json({ message: 'Файл не найден' });
-            }
-            absence.documentName = documentName;
+        let documentName;
+        if (req.file) {
+            absence.documentName = req.file.filename;
         }
         if (status) {
             if (!userRoles.some(role => role === 'dean')) {
