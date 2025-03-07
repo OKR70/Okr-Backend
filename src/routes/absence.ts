@@ -15,14 +15,14 @@ import { authToken } from '../middlewares/authToken';
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, './src/files');
+        cb(null, './src/files');
     },
     filename: (req, file, cb) => {
-      const fileExtension = path.extname(file.originalname); // Получаем расширение файла
-      const newFileName = `${uuidv4()}${fileExtension}`; // Генерируем новое имя с расширением
-      cb(null, newFileName);
+        const fileExtension = path.extname(file.originalname); // Получаем расширение файла
+        const newFileName = `${uuidv4()}${fileExtension}`; // Генерируем новое имя с расширением
+        cb(null, newFileName);
     }
-  });
+});
   
 const upload = multer({ storage: storage });
 /*
