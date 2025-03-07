@@ -2,13 +2,29 @@ import express, {
     Request,
     Response
 } from 'express';
+import path from 'path';
+import * as fs from 'fs';
 import Fuse from 'fuse.js';
+import multer from 'multer';
+import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 import UserModel from '../models/user';
 import AbsenceModel from '../models/absence';
 import { hasRole } from '../middlewares/hasRole';
 import { authToken } from '../middlewares/authToken';
-// import { uploadFile } from '../middlewares/uploadFile'
 
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, './src/files');
+    },
+    filename: (req, file, cb) => {
+      const fileExtension = path.extname(file.originalname); // Получаем расширение файла
+      const newFileName = `${uuidv4()}${fileExtension}`; // Генерируем новое имя с расширением
+      cb(null, newFileName);
+    }
+  });
+  
+const upload = multer({ storage: storage });
 /*
  * Заявки на пропуски
  */
@@ -22,23 +38,40 @@ router.post(
     '/create',
     authToken,
     hasRole('student'),
-    //uploadFile,
+    upload.single('document'),
     async (req: Request, res: Response): Promise<any> => {
     const {
         type,
         endDate,
         startDate,
-        estimatedEndDate,
-        statementInDeanery,
+        statementInDeanery
     } = req.body;
 
-    if (!type || !startDate || !endDate) {
+    if (!type || !startDate || (type === 'educational' && (!endDate || !req.file))) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         return res.status(400).json({ message: 'Пропущено одно или несколько из обязательных полей' });
     }
 
-    // if (type === 'educational' && !req.file) {
-    //     return res.status(400).json({ message: 'Документ обязателен для учебной заявки' });
-    // }
+    if (!['educational', 'family', 'medical'].includes(type)) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
+        return res.status(400).json({ message: 'Неправильный тип заявки на пропуск' });
+    }
+
+    if (endDate && startDate > endDate) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
+        return res.status(400).json({ message: 'Дата начала не может быть позже конца' });
+    }
+
+    let documentName;
+    if (req.file) {
+        documentName = req.file.filename;
+    }
 
     const {
         _id,
@@ -52,26 +85,16 @@ router.post(
             fullname
         },
         startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        //...(req.file && { documentId: (req.file as any).id })
+        endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        ...(documentName && { documentName }),
+        ...(type === 'family' && statementInDeanery && { statementInDeanery })
     });
-    
-    try {
-        switch (type) {
-            case 'medical':
-                newAbsence.estimatedEndDate = estimatedEndDate ? new Date(estimatedEndDate) : undefined;
-                break;
-            case 'family':
-                newAbsence.statementInDeanery = statementInDeanery;
-                break;
-            default:
-                return res.status(400).json({ message: 'Неправильный тип заявки' });
-        }
 
+    try {
         const absence = await newAbsence.save();
-        res.status(201).json(absence);
-    } catch (error) {
-        res.status(500).json({ message: 'Ошибка сервера' });
+        res.status(201).json({ absence });
+    } catch (err) {
+        res.status(500).json({ message: err });
     }
 })
 
@@ -79,44 +102,39 @@ router.post(
  * Получение всех заявок на пропуск
  */
 router.get(
-    '/all',
+    '/',
     authToken,
-    async (req: Request, res: Response) => {
+    async (req: Request, res: Response): Promise<any> => {
         try {
             const userRoles = req.user!.role;
             const query = req.query.query as string;
             const skip = parseInt(req.query.skip as string) || 0;
             const limit = parseInt(req.query.limit as string) || 10;
-            
-            let finalAbsences;
-            let finalTotalSize = 0;
-            if (userRoles.some(role => ['dean', 'professor'].includes(role))) {
-                const [
-                    absences,
-                    totalSize
-                ] = await Promise.all([
-                    AbsenceModel.find(),
-                    AbsenceModel.countDocuments()
-                ]);
-                
-                finalAbsences = absences;
-                finalTotalSize = totalSize;
-            } else if (userRoles.includes('student')) {
-                const [
-                    absences,
-                    totalSize
-                ] = await Promise.all([
-                    AbsenceModel.find({ userId: req.user!.id }),
-                    AbsenceModel.countDocuments({ userId: req.user!.id }),
-                ]);
+            const onlyMine = req.query.onlyMine ? req.query.onlyMine : false;
+            const status = req.query.status as string;
 
-                finalAbsences = absences;
-                finalTotalSize = totalSize;
+            let filter: any = {};
+            if (status) {
+                const statusArray = status.split(',').map(s => s.trim());
+
+                const validStatuses = ['pending', 'approved', 'rejected'];
+                if (!statusArray.every(s => validStatuses.includes(s))) {
+                    return res.status(400).json({ message: 'Недопустимый статус' });
+                }
+
+                // Фильтруем только по статусам, которые указаны
+                filter.status = { $in: statusArray };
+            }
+            
+            if (onlyMine && userRoles.includes('student') || userRoles.includes('student') && userRoles.length === 1) {
+                filter['user._id'] = new mongoose.Types.ObjectId(req.user!._id);
             }
 
+            const allAbsences = await AbsenceModel.find(filter);
+            let filteredAbsences = allAbsences;
             if (query) {
                 // Создаем массив объектов с ФИО и id заявки
-                const searchItems = await Promise.all(finalAbsences!.map(async absence => {
+                const searchItems = await Promise.all(allAbsences!.map(async absence => {
                     const user = await UserModel.findOne({ _id: absence.user._id });
                     return {
                         _id: absence._id,
@@ -134,38 +152,45 @@ router.get(
                 const searchResults = fuse.search(query);
                 
                 // Возвращаем только id заявок, которые соответствуют поисковому запросу
-                const filteredAbsences = searchResults.map(result => result.item._id);
-                
-                // Получаем заявки по id с пагинацией и общее количество найденных документов
-                const [
-                    paginatedAbsences,
-                    totalSize
-                ] = await Promise.all([
-                    AbsenceModel.find({ _id: { $in: filteredAbsences } })
-                        .skip(skip)
-                        .limit(limit),
-                    AbsenceModel.countDocuments({ _id: { $in: filteredAbsences } })
-                ]);
+                const filteredAbsencesIds = searchResults.map(result => result.item._id);
 
-                finalAbsences = paginatedAbsences;
-                finalTotalSize = totalSize;
+                // Ищем заявки по _id
+                filteredAbsences = allAbsences.filter(absence => filteredAbsencesIds.includes(absence._id));
             }
             
+            const totalSize = filteredAbsences.length;
+            const paginatedAbsences = filteredAbsences.slice(skip, skip + limit);
+
             res.status(200).json({
-                totalSize: finalTotalSize,
-                items: finalAbsences
+                totalSize,
+                items: paginatedAbsences
             });
-        } catch (error) {
-            res.status(500).json({ message: 'Ошибка сервера' });
+        } catch (err) {
+            res.status(500).json({ message: err });
         }
     }
 );
 
+/*
+ * Изменение конкретной заявки на пропуск
+ */
 router.patch(
     '/:id',
     authToken,
+    upload.single('document'),
     async (req: Request, res: Response): Promise<any> => {
         try {
+            const {
+                status,
+                endDate,
+                startDate,
+                statementInDeanery
+            } = req.body;
+            
+            if (endDate && startDate > endDate) {
+                return res.status(400).json({ message: 'Дата начала не может быть позже конца' });
+            }
+            
             const absenceId = req.params.id;
             const userRoles = req.user!.role;
 
@@ -175,33 +200,88 @@ router.patch(
                 return res.status(404).json({ message: 'Заявка не найдена' });
             }
 
-            if (userRoles.includes('student') && !userRoles.includes('dean')) {
-                if (userRoles.includes('student') && (
-                    absence.user._id !== req.user!.id || 
-                    !['educational', 'family'].includes(absence.type))) {
+            if (userRoles.includes('student') && userRoles.length === 1) {
+                if (absence.user._id !== req.user!.id || !['educational'].includes(absence.type)) {
                     return res.status(403).json({ message: 'Доступ запрещен' });
                 }
             }
+            
+            let documentName;
+            if (req.file) {
+                absence.documentName = req.file.filename;
+            }
 
-            if (req.body.status) {
+            if (status) {
                 if (!userRoles.some(role => role === 'dean')) {
                     return res.status(403).json({ message: 'Только деканат может подтвердить/одобрить статус заявки' });
                 }
 
-                if (!['approved', 'rejected'].includes(req.body.status)) {
+                if (!['approved', 'rejected'].includes(status)) {
                     return res.status(400).json({ message: 'Неверный статус' });
                 }
+
+                absence.status = status;
+            } else {
+                absence.status = 'pending';
             }
 
-            Object.assign(absence, req.body);
+            if (startDate) {
+                absence.startDate = new Date(startDate);
+            }
+
+            if (endDate) {
+                absence.endDate = new Date(endDate);
+            }
+
+            if (statementInDeanery) {
+                absence.statementInDeanery = statementInDeanery;
+            }
 
             // Сохраняем обновленную заявку
             await absence.save();
             res.status(200).json(absence);
-        } catch (error) {
-            res.status(500).json({ message: 'Ошибка сервера' });
+        } catch (err) {
+            res.status(500).json({ message: err });
         }
     }
 );
 
-export { router as AbsenceRouter };
+/*
+ * Получение конкретной заявки на пропуск
+ */
+router.get(
+    '/:id',
+    authToken,
+    async (req: Request, res: Response): Promise<any> => {
+        try {
+            const absenceId = req.params.id;
+            const userRoles = req.user!.role;
+            const userId = req.user!._id;
+
+            const absence = await AbsenceModel.findById(absenceId).lean();
+
+            if (!absence) {
+                return res.status(404).json({ message: 'Заявка не найдена' });
+            }
+
+            // Если пользователь только студент, он может получить только свою заявку
+            if (userRoles.includes('student') && userRoles.length === 1) {
+                if (absence.user._id.toString() !== userId.toString()) {
+                    return res.status(403).json({ message: 'Доступ запрещен' });
+                }
+            }
+
+            const documentUrl = `/api/file/${absence.documentName}`;
+            delete absence.documentName;
+            
+            res.status(200).json({
+                absence,
+                documentUrl
+            });
+        } catch (err) {
+            res.status(500).json({ message: err });
+        }
+    }
+);
+
+module.exports = router;

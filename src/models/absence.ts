@@ -14,45 +14,48 @@ export interface IAbsence extends Document {
     status: 'pending' | 'approved' | 'rejected';
     startDate: Date;
     endDate: Date;
-    documentId?: string; // для учебных
+    documentName?: string;
     statementInDeanery?: boolean; // для семейных
-    estimatedEndDate?: Date; // для больничных
 }
 
-const absenceSchema = new Schema<IAbsence>({
-    type: {
-        type: String,
-        enum: ['medical', 'family', 'educational'],
-        required: true
-    },
-    user: {
-        _id: {
-            type: mongoose.Schema.Types.ObjectId,
+const absenceSchema = new Schema<IAbsence>(
+    {
+        type: {
+            type: String,
+            enum: ['medical', 'family', 'educational'],
             required: true
         },
-        fullname: { 
+        user: {
+            _id: {
+                type: mongoose.Schema.Types.ObjectId,
+                required: true
+            },
+            fullname: { 
+                type: String,
+                required: true
+            }
+        },
+        status: {
             type: String,
+            enum: ['pending', 'approved', 'rejected'],
+            default: 'pending',
             required: true
-        }
+        },
+        startDate: {
+            type: Date,
+            required: true
+        },
+        endDate: {
+            type: Date,
+            required: true
+        },
+        documentName: String,
+        statementInDeanery: Boolean
     },
-    status: {
-        type: String,
-        enum: ['pending', 'approved', 'rejected'],
-        default: 'pending',
-        required: true
-    },
-    startDate: {
-        type: Date,
-        required: true
-    },
-    endDate: {
-        type: Date,
-        required: true
-    },
-    documentId: String,
-    statementInDeanery: Boolean,
-    estimatedEndDate: Date
-});
+    {
+        versionKey: false
+    }
+);
 
 const AbsenceModel = database.model('Absence', absenceSchema);
 

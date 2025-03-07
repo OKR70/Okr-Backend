@@ -1,50 +1,42 @@
-import express from 'express';
-import cors from 'cors';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
 //import yaml from 'js-yaml';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import bodyParser from 'body-parser';
-import swaggerJsdoc from 'swagger-jsdoc';
-import cookieParser from 'cookie-parser';
-import swaggerUi from 'swagger-ui-express';
+const dotenv_1 = __importDefault(require("dotenv"));
+const mongoose_1 = __importDefault(require("mongoose"));
+const body_parser_1 = __importDefault(require("body-parser"));
+const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 //import expressUseragent from 'express-useragent';
-
 /*
  * Главный файл
  */
-
 // Импортируем middlewares
 //import { authToken } from './middlewares/authToken';
-
 // Импортирует роуты
-import userRoutes from './routes/userRoutes';
-import rolesRoutes from './routes/rolesRoutes';
-
+const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
+const rolesRoutes_1 = __importDefault(require("./routes/rolesRoutes"));
 // Загружаем переменные окружения из .env файла
-dotenv.config();
-
-const app = express();
-const {
-    DATABASE_URL
-} = process.env;
-
-const HTTP_PORT = process.env.HTTP_PORT as unknown as number;
+dotenv_1.default.config();
+const app = (0, express_1.default)();
+const { DATABASE_URL } = process.env;
+const HTTP_PORT = process.env.HTTP_PORT;
 const HOST = process.env.HOST || 'localhost';
-
 // Подключение к базе данных
-mongoose.set('strictQuery', false);
-mongoose.connect(DATABASE_URL as string);
-const database = mongoose.connection;
-
+mongoose_1.default.set('strictQuery', false);
+mongoose_1.default.connect(DATABASE_URL);
+const database = mongoose_1.default.connection;
 database.on('error', (error) => console.log('Database connection error:', error));
 database.once('connected', () => console.log('Database Connected'));
-
 // Обработка необработанных исключений
 process.on('uncaughtException', (exception) => console.log(`ERROR:`, exception));
-
 // При использовании Nginx
 app.set('trust proxy', true);
-
 // Настройка Swagger
 const options = {
     definition: {
@@ -62,36 +54,28 @@ const options = {
     },
     apis: ['./src/routes/*.ts'], // Путь к файлам с маршрутами
 };
-
-app.use(cookieParser());
-
-const specs = swaggerJsdoc(options);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
-
+app.use((0, cookie_parser_1.default)());
+const specs = (0, swagger_jsdoc_1.default)(options);
+app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(specs));
 // Найстрока, если front-end на другом сервере
-app.use(cors({
+app.use((0, cors_1.default)({
     origin: true,
     credentials: true,
 }));
-
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-const apiRouter = express.Router();
-
+app.use(express_1.default.json());
+app.use(body_parser_1.default.urlencoded({ extended: true }));
+const apiRouter = express_1.default.Router();
 apiRouter.use('/absence', require('./routes/absence'));
 apiRouter.use('/auth', require('./routes/auth'));
 apiRouter.use('/file', require('./routes/file'));
-apiRouter.use('/users', userRoutes);
-apiRouter.use('/roles', rolesRoutes);
-
+apiRouter.use('/users', userRoutes_1.default);
+apiRouter.use('/roles', rolesRoutes_1.default);
 // Чтобы все запросы начинались с /api
 app.use('/api', apiRouter);
-
 // Обработка страниц 404
 app.use('*', require('./routes/notFound'));
-
 // Запуск сервера
 app.listen(HTTP_PORT, HOST, () => {
     console.log(`Server is running on http://localhost:${HTTP_PORT}`);
 });
+//# sourceMappingURL=index.js.map

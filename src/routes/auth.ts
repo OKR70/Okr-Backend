@@ -5,15 +5,32 @@ import express, {
 import UserModel from '../models/user';
 import TokenService from '../services/token';
 import PasswordService from '../services/password';
-import { authToken } from '../middlewares/authToken';
+import { authToken } from '../middlewares/authToken'; 
 import { validateEmailAndPassword } from '../middlewares/validation';
 
 const router = express.Router();
 
 /*
- * Авторизация
+ * Авторизация 
  */
 
+/*
+ * Получить сессию пользователя
+ */
+router.get(
+    '/session',
+    authToken,
+    async (req: Request, res: Response): Promise<any> => {
+    try {
+        return res.status(200).json({ user: req.user });
+    } catch (err) {
+        return res.status(500).json({ message: err });
+    }
+})
+
+/*
+ * Регистрация
+ */
 router.post(
     '/register',
     validateEmailAndPassword,
@@ -21,29 +38,35 @@ router.post(
     const {
         login,
         fullname,
-        password,
+        password
     } = req.body;
 
     try {
-
+        const existingUser = await UserModel.findOne({ login });
+        if (existingUser) {
+            return res.status(409).json({ message: "Пользователь с таким login уже существует" })
+        }
+        
         // Проверяем пароль
         const hashedPassword = PasswordService.hashPassword(password);
 
         // Создаем нового пользователя
-        const newUser = await new UserModel({
-            login,
-            fullname,
-            password: hashedPassword
-        }).save();
+        const newUser = (
+            await UserModel.create({
+                login,
+                fullname,
+                password: hashedPassword
+            })
+        ).toObject();
         
-        // Генерируем токены
+        delete newUser.password;
+        
+        // Генерируем токен
         const token = await TokenService.generateToken(newUser._id.toString());
         
         TokenService.setTokenCookie(res, token);
 
-        return res.status(201).json({
-            user: newUser
-        });
+        return res.status(201).json({ user: newUser });
     } catch (err) {
         return res.status(500).json({ message: err });
     }
@@ -58,13 +81,13 @@ router.post(
     async (req: Request, res: Response): Promise<any> => {
     const {
         login,
-        password
+        password,
     } = req.body;
 
     try {
         // Находим пользователя по email
-        const user = await UserModel.findOne({ login });
-
+        const user = await UserModel.findOne({ login }).lean();
+        
         if (!user) {
             return res.status(404).json({ message: 'Пользователь не найден' });
         }
@@ -75,13 +98,13 @@ router.post(
             return res.status(401).json({ message: 'Неверный пароль' });
         }
 
-        // Генерируем токены
+        delete user.password;
+
+        // Генерируем токен
         const token = await TokenService.generateToken(user._id.toString());
         
         TokenService.setTokenCookie(res, token);
-        return res.status(201).json({
-            user: user
-        });
+        return res.status(200).json({ user });
     } catch (err) {
         return res.status(500).json({ message: err });
     }
@@ -104,4 +127,4 @@ router.post(
     }
 });
 
-export { router as AuthRouter };
+module.exports = router;

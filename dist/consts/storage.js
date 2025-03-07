@@ -1,13 +1,12 @@
+"use strict";
 // import { GridFsStorage } from 'multer-gridfs-storage';
 // import { GridFsStorage } from 'multer-gridfs-storage';
-
 // /*
 //  * Настройка GridFS
 //  */
 // /*
 //  * Настройка GridFS
 //  */
-
 // const {
 //     DATABASE_URL
 // } = process.env as {
@@ -18,7 +17,6 @@
 // } = process.env as {
 //     DATABASE_URL: string
 // };
-
 // const storage = new GridFsStorage({
 //     url: DATABASE_URL,
 //     file: (req: any, file: any) => {
@@ -32,5 +30,5 @@
 //     });
 //     },
 // });
-
 // export { storage };
+//# sourceMappingURL=storage.js.map
