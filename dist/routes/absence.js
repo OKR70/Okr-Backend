@@ -41,6 +41,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -99,13 +110,14 @@ router.post('/create', authToken_1.authToken, (0, hasRole_1.hasRole)('student'),
         documentName = req.file.filename;
     }
     const { _id, fullname } = req.user;
-    let newAbsence = new absence_1.default(Object.assign(Object.assign({ type, user: {
+    let absence = new absence_1.default(Object.assign(Object.assign({ type, user: {
             _id,
             fullname
-        }, startDate: new Date(startDate), endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }, (documentName && { documentName })), (type === 'family' && statementInDeanery && { statementInDeanery })));
+        }, startDate: new Date(startDate), endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(Date.now()) }, (documentName && { documentName })), (type === 'family' && statementInDeanery && { statementInDeanery })));
     try {
-        const absence = yield newAbsence.save();
-        res.status(201).json({ absence });
+        yield absence.save();
+        const _a = absence.toObject(), { createdAt } = _a, absenceResponse = __rest(_a, ["createdAt"]);
+        res.status(201).json({ absence: absenceResponse });
     }
     catch (err) {
         res.status(500).json({ message: err });
@@ -135,7 +147,9 @@ router.get('/', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, v
         if (onlyMine && userRoles.includes('student') || userRoles.includes('student') && userRoles.length === 1) {
             filter['user._id'] = new mongoose_1.default.Types.ObjectId(req.user._id);
         }
-        const allAbsences = yield absence_1.default.find(filter);
+        const allAbsences = yield absence_1.default.find(filter)
+            .sort({ createdAt: -1 }) // Сортируем в обратном порядке по createdAt
+            .select('-createdAt');
         let filteredAbsences = allAbsences;
         if (query) {
             // Создаем массив объектов с ФИО и id заявки
@@ -189,7 +203,6 @@ router.patch('/:id', authToken_1.authToken, upload.single('document'), (req, res
                 return res.status(403).json({ message: 'Доступ запрещен' });
             }
         }
-        let documentName;
         if (req.file) {
             absence.documentName = req.file.filename;
         }
@@ -216,7 +229,8 @@ router.patch('/:id', authToken_1.authToken, upload.single('document'), (req, res
         }
         // Сохраняем обновленную заявку
         yield absence.save();
-        res.status(200).json(absence);
+        const _a = absence.toObject(), { createdAt } = _a, absenceResponse = __rest(_a, ["createdAt"]);
+        res.status(200).json(absenceResponse);
     }
     catch (err) {
         res.status(500).json({ message: err });
@@ -241,7 +255,7 @@ router.get('/:id', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0
             }
         }
         const documentUrl = `/api/file/${absence.documentName}`;
-        delete absence.documentName;
+        delete absence.documentName, absence.createdAt;
         res.status(200).json({
             absence,
             documentUrl
