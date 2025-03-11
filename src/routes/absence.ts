@@ -25,6 +25,7 @@ const storage = multer.diskStorage({
   });
   
 const upload = multer({ storage: storage });
+
 /*
  * Заявки на пропуски
  */
@@ -78,7 +79,7 @@ router.post(
         fullname
     } = req.user!;
     
-    let newAbsence = new AbsenceModel({
+    let absence = new AbsenceModel({
         type,
         user: {
             _id,
@@ -86,13 +87,15 @@ router.post(
         },
         startDate: new Date(startDate),
         endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now()),
         ...(documentName && { documentName }),
         ...(type === 'family' && statementInDeanery && { statementInDeanery })
     });
 
     try {
-        const absence = await newAbsence.save();
-        res.status(201).json({ absence });
+        await absence.save();
+        const { createdAt, ...absenceResponse } = absence.toObject();
+        res.status(201).json({ absence: absenceResponse });
     } catch (err) {
         res.status(500).json({ message: err });
     }
@@ -130,7 +133,10 @@ router.get(
                 filter['user._id'] = new mongoose.Types.ObjectId(req.user!._id);
             }
 
-            const allAbsences = await AbsenceModel.find(filter);
+            const allAbsences = await AbsenceModel.find(filter)
+                .sort({ createdAt: -1 }) // Сортируем в обратном порядке по createdAt
+                .select('-createdAt');
+                
             let filteredAbsences = allAbsences;
             if (query) {
                 // Создаем массив объектов с ФИО и id заявки
@@ -205,8 +211,7 @@ router.patch(
                     return res.status(403).json({ message: 'Доступ запрещен' });
                 }
             }
-            
-            let documentName;
+
             if (req.file) {
                 absence.documentName = req.file.filename;
             }
