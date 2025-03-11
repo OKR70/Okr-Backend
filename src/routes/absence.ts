@@ -277,11 +277,13 @@ router.get(
                 }
             }
 
-            const documentUrl = `/api/file/${absence.documentName}`;
+            const hasDocument = absence.documentName !== null && absence.documentName !== undefined;
+            const documentUrl = `/file/${absence.documentName}`;
             delete absence.documentName, absence.createdAt;
             
             res.status(200).json({
                 absence,
+                hasDocument,
                 documentUrl
             });
         } catch (err) {
