@@ -46,54 +46,66 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const path_1 = __importDefault(require("path"));
 const fs = __importStar(require("fs"));
 const fuse_js_1 = __importDefault(require("fuse.js"));
+const multer_1 = __importDefault(require("multer"));
 const mongoose_1 = __importDefault(require("mongoose"));
+const uuid_1 = require("uuid");
 const user_1 = __importDefault(require("../models/user"));
 const absence_1 = __importDefault(require("../models/absence"));
 const hasRole_1 = require("../middlewares/hasRole");
 const authToken_1 = require("../middlewares/authToken");
+const storage = multer_1.default.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, './src/files');
+    },
+    filename: (req, file, cb) => {
+        const fileExtension = path_1.default.extname(file.originalname); // Получаем расширение файла
+        const newFileName = `${(0, uuid_1.v4)()}${fileExtension}`; // Генерируем новое имя с расширением
+        cb(null, newFileName);
+    }
+});
+const upload = (0, multer_1.default)({ storage: storage });
 /*
- * Заявки на пропуски Протестировать первые 3 запроса
+ * Заявки на пропуски
  */
 const router = express_1.default.Router();
 /*
  * Создание новой заявки
-    "type": "medical",
-    "endDate": "2024-12-31",
-    "startDate": "2024-12-31",
-    "statementInDeanery": ""
  */
-router.post('/create', authToken_1.authToken, (0, hasRole_1.hasRole)('student'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { type, endDate, startDate, documentName, statementInDeanery } = req.body;
-    if (!type || !startDate || (type === 'educational' && (!endDate || !documentName))) {
+router.post('/create', authToken_1.authToken, (0, hasRole_1.hasRole)('student'), upload.single('document'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { type, endDate, startDate, statementInDeanery } = req.body;
+    if (!type || !startDate || (type === 'educational' && (!endDate || !req.file))) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         return res.status(400).json({ message: 'Пропущено одно или несколько из обязательных полей' });
     }
     if (!['educational', 'family', 'medical'].includes(type)) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         return res.status(400).json({ message: 'Неправильный тип заявки на пропуск' });
     }
     if (endDate && startDate > endDate) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         return res.status(400).json({ message: 'Дата начала не может быть позже конца' });
     }
-    if (documentName) {
-        const filesDir = './src/files';
-        // Путь к файлу
-        const filePath = `${filesDir}/${documentName}`;
-        // Проверка существования файла
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ message: 'Файл не найден' });
-        }
+    let documentName;
+    if (req.file) {
+        documentName = req.file.filename;
     }
     const { _id, fullname } = req.user;
     let newAbsence = new absence_1.default(Object.assign(Object.assign({ type, user: {
             _id,
             fullname
-        }, startDate: new Date(startDate), endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }, (documentName && {
-        documentName: documentName
-    })), (type === 'family' && { statementInDeanery })));
+        }, startDate: new Date(startDate), endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }, (documentName && { documentName })), (type === 'family' && statementInDeanery && { statementInDeanery })));
     try {
         const absence = yield newAbsence.save();
-        res.status(201).json(absence);
+        res.status(201).json({ absence });
     }
     catch (err) {
         res.status(500).json({ message: err });
@@ -160,9 +172,9 @@ router.get('/', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, v
 /*
  * Изменение конкретной заявки на пропуск
  */
-router.patch('/:id', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.patch('/:id', authToken_1.authToken, upload.single('document'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { status, endDate, startDate, documentName, statementInDeanery } = req.body;
+        const { status, endDate, startDate, statementInDeanery } = req.body;
         if (endDate && startDate > endDate) {
             return res.status(400).json({ message: 'Дата начала не может быть позже конца' });
         }
@@ -177,15 +189,9 @@ router.patch('/:id', authToken_1.authToken, (req, res) => __awaiter(void 0, void
                 return res.status(403).json({ message: 'Доступ запрещен' });
             }
         }
-        if (documentName) {
-            const filesDir = './src/files';
-            // Путь к файлу
-            const filePath = `${filesDir}/${documentName}`;
-            // Проверка существования файла
-            if (!fs.existsSync(filePath)) {
-                return res.status(404).json({ message: 'Файл не найден' });
-            }
-            absence.documentName = documentName;
+        let documentName;
+        if (req.file) {
+            absence.documentName = req.file.filename;
         }
         if (status) {
             if (!userRoles.some(role => role === 'dean')) {

@@ -1,3 +1,4 @@
+import { File } from 'formidable';
 import { IUser } from './models/user';
 
 /*
@@ -8,7 +9,6 @@ declare global {
     namespace Express {
         interface Request { // Запрос
             user?: IUser;
-            files?: { [key: string]: any };
         }
         interface Response { // Ответ
             cookie(name: string, value: string, options?: any): this;

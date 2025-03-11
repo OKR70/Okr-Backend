@@ -5,6 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const userController_1 = require("../controllers/userController");
+const hasRole_1 = require("../middlewares/hasRole");
+const authToken_1 = require("../middlewares/authToken");
 const router = express_1.default.Router();
 /**
  * @swagger
@@ -45,7 +47,7 @@ const router = express_1.default.Router();
  *                   type: string
  *                   example: Произошла ошибка на сервере
  */
-router.get('/', userController_1.getAllUsers);
+router.get('/', authToken_1.authToken, (0, hasRole_1.hasRole)('dean', 'professor', 'student'), userController_1.getAllUsers);
 /**
  * Получить пользователя по ID
  */
@@ -94,6 +96,10 @@ router.get('/', userController_1.getAllUsers);
  *                   type: string
  *                   example: Произошла ошибка на сервере
  */
-router.get('/:id', userController_1.getUserById);
+router.get('/:id', authToken_1.authToken, (0, hasRole_1.hasRole)('dean', 'professor', 'student'), userController_1.getUserById);
+/**
+ * Редактировать пользователя
+ */
+router.patch('/:id', authToken_1.authToken, (0, hasRole_1.hasRole)('dean'), userController_1.updateUser);
 exports.default = router;
 //# sourceMappingURL=userRoutes.js.map
