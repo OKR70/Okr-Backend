@@ -188,6 +188,7 @@ router.patch(
     async (req: Request, res: Response): Promise<any> => {
         try {
             const {
+                type,
                 status,
                 endDate,
                 startDate,
@@ -231,6 +232,10 @@ router.patch(
                 absence.status = 'pending';
             }
 
+            if (type && !['educational', 'family', 'medical'].includes(type)) {
+                return res.status(400).json({ message: 'Неправильный тип заявки на пропуск' });
+            }
+            
             if (startDate) {
                 absence.startDate = new Date(startDate);
             }
