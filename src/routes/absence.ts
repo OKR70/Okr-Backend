@@ -79,14 +79,15 @@ router.post(
         fullname
     } = req.user!;
     
+    const startDateToDate = new Date(startDate);
     let absence = new AbsenceModel({
         type,
         user: {
             _id,
             fullname
         },
-        startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        startDate: startDateToDate,
+        endDate: endDate ? new Date(endDate) : new Date(startDateToDate.getTime() + 7 * 24 * 60 * 60 * 1000),
         createdAt: new Date(Date.now()),
         ...(documentName && { documentName }),
         ...(type === 'family' && statementInDeanery && { statementInDeanery })
@@ -284,7 +285,7 @@ router.get(
             res.status(200).json({
                 absence,
                 hasDocument,
-                documentUrl
+                ...(hasDocument && { documentUrl })
             });
         } catch (err) {
             res.status(500).json({ message: err });

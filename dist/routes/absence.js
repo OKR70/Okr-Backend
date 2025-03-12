@@ -110,10 +110,11 @@ router.post('/create', authToken_1.authToken, (0, hasRole_1.hasRole)('student'),
         documentName = req.file.filename;
     }
     const { _id, fullname } = req.user;
+    const startDateToDate = new Date(startDate);
     let absence = new absence_1.default(Object.assign(Object.assign({ type, user: {
             _id,
             fullname
-        }, startDate: new Date(startDate), endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(Date.now()) }, (documentName && { documentName })), (type === 'family' && statementInDeanery && { statementInDeanery })));
+        }, startDate: startDateToDate, endDate: endDate ? new Date(endDate) : new Date(startDateToDate.getTime() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(Date.now()) }, (documentName && { documentName })), (type === 'family' && statementInDeanery && { statementInDeanery })));
     try {
         yield absence.save();
         const _a = absence.toObject(), { createdAt } = _a, absenceResponse = __rest(_a, ["createdAt"]);
@@ -254,12 +255,11 @@ router.get('/:id', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0
                 return res.status(403).json({ message: 'Доступ запрещен' });
             }
         }
-        const documentUrl = `/api/file/${absence.documentName}`;
+        const hasDocument = absence.documentName !== null && absence.documentName !== undefined;
+        const documentUrl = `/file/${absence.documentName}`;
         delete absence.documentName, absence.createdAt;
-        res.status(200).json({
-            absence,
-            documentUrl
-        });
+        res.status(200).json(Object.assign({ absence,
+            hasDocument }, (hasDocument && { documentUrl })));
     }
     catch (err) {
         res.status(500).json({ message: err });
