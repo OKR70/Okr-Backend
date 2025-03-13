@@ -131,7 +131,7 @@ router.get('/', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, v
     try {
         const userRoles = req.user.role;
         const query = req.query.query;
-        const skip = parseInt(req.query.skip) || 0;
+        const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const onlyMine = req.query.onlyMine ? req.query.onlyMine : false;
         const status = req.query.status;
@@ -174,7 +174,7 @@ router.get('/', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, v
             filteredAbsences = allAbsences.filter(absence => filteredAbsencesIds.includes(absence._id));
         }
         const totalSize = filteredAbsences.length;
-        const paginatedAbsences = filteredAbsences.slice(skip, skip + limit);
+        const paginatedAbsences = filteredAbsences.slice(page * limit, page * limit + limit);
         res.status(200).json({
             totalSize,
             items: paginatedAbsences

@@ -112,7 +112,7 @@ router.get(
         try {
             const userRoles = req.user!.role;
             const query = req.query.query as string;
-            const skip = parseInt(req.query.skip as string) || 0;
+            const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 10;
             const onlyMine = req.query.onlyMine ? req.query.onlyMine : false;
             const status = req.query.status as string;
@@ -166,7 +166,7 @@ router.get(
             }
             
             const totalSize = filteredAbsences.length;
-            const paginatedAbsences = filteredAbsences.slice(skip, skip + limit);
+            const paginatedAbsences = filteredAbsences.slice(page * limit, page * limit + limit);
 
             res.status(200).json({
                 totalSize,
