@@ -111,7 +111,7 @@ router.get(
     async (req: Request, res: Response): Promise<any> => {
         try {
             const userRoles = req.user!.role;
-            const query = req.query.query as string;
+            const search = req.query.search as string;
             const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 10;
             const onlyMine = req.query.onlyMine ? req.query.onlyMine : false;
@@ -139,13 +139,12 @@ router.get(
                 .select('-createdAt');
                 
             let filteredAbsences = allAbsences;
-            if (query) {
+            if (search) {
                 // Создаем массив объектов с ФИО и id заявки
                 const searchItems = await Promise.all(allAbsences!.map(async absence => {
-                    const user = await UserModel.findOne({ _id: absence.user._id });
                     return {
                         _id: absence._id,
-                        fullname: user?.fullname,
+                        fullname: absence.user?.fullname,
                     };
                 }));
                 
@@ -156,7 +155,7 @@ router.get(
                 };
                 
                 const fuse = new Fuse(searchItems, fuseOptions);
-                const searchResults = fuse.search(query);
+                const searchResults = fuse.search(search);
                 
                 // Возвращаем только id заявок, которые соответствуют поисковому запросу
                 const filteredAbsencesIds = searchResults.map(result => result.item._id);
@@ -166,7 +165,7 @@ router.get(
             }
             
             const totalSize = filteredAbsences.length;
-            const paginatedAbsences = filteredAbsences.slice(page * limit, page * limit + limit);
+            const paginatedAbsences = filteredAbsences.slice((page - 1) * limit, page * limit);
 
             res.status(200).json({
                 totalSize,
