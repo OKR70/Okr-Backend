@@ -3,7 +3,6 @@ import {
     Response,
     NextFunction
 } from 'express';
-import AdminModel from '../models/admin';
 import UserModel from '../models/user';
 import TokenService from '../services/token';
 import jwt, { JsonWebTokenError } from 'jsonwebtoken';
@@ -35,13 +34,10 @@ export const authToken = async (req: Request, res: Response, next: NextFunction)
                 return res.status(403).json({ message: 'Недействительный токен' });
             }
 
-            let admin;
             const user = await UserModel.findById(payload.userId).lean();
             if (!user) {
-                admin = await AdminModel.findById(payload.userId).lean();
-                if (!admin) {
-                    return res.status(404).json({ message: 'Пользователь не найден' });
-                }
+                return res.status(404).json({ message: 'Пользователь не найден' });
+
             }
             
             const isRevoked = await TokenService.checkRevoked(payload['jti']);
@@ -50,14 +46,9 @@ export const authToken = async (req: Request, res: Response, next: NextFunction)
                 return res.status(401).json({ message: 'Токен был отозван' });
             }
             
-            if (!admin) {
-                delete user!.password;
-                req.user = user!;
-            } else {
-                delete admin!.password;
-                req.admin = admin!;
-            }
-
+            delete user.password;
+            req.user = user;
+            
             next();
         });
     } catch (error) {

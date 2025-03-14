@@ -16,4 +16,4 @@ router.use('*', (_: Request, res: Response) => {
     });
 });
 
-export { router as NotFoundRouter };
+module.exports = router;

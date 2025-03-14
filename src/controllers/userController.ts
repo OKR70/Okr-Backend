@@ -73,11 +73,6 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
         const totalUsers = await UserModel.countDocuments(query);
         const totalPages = Math.ceil(totalUsers / limit);
 
-        if (page > totalPages) {
-            res.status(404).json({ message: 'Страница не существует' });
-            return;
-        }
-
         res.status(200).json({
             data: users,
             pagination: {

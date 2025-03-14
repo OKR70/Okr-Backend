@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserById = exports.getAllUsers = void 0;
+exports.updateUser = exports.getUserById = exports.getAllUsers = void 0;
 const user_1 = __importDefault(require("../models/user"));
 /**
  * @swagger
@@ -44,22 +44,26 @@ const user_1 = __importDefault(require("../models/user"));
  *                   type: string
  *                   example: Произошла ошибка на сервере
  */
-/*
+/**
  * Получить всех пользователей
  */
 const getAllUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
-        const role = req.query.role;
+        const roles = req.query.role ? (Array.isArray(req.query.role) ? req.query.role : [req.query.role]) : undefined;
+        const group = req.query.group;
         const search = req.query.search;
         if (page < 1 || limit < 1) {
             res.status(400).json({ message: 'Параметры page и limit должны быть положительными числами' });
             return;
         }
         const query = {};
-        if (role) {
-            query.role = role;
+        if (roles) {
+            query.role = { $in: roles };
+        }
+        if (group) {
+            query.group = group;
         }
         if (search) {
             query.$or = [
@@ -72,10 +76,6 @@ const getAllUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             .limit(limit);
         const totalUsers = yield user_1.default.countDocuments(query);
         const totalPages = Math.ceil(totalUsers / limit);
-        if (page > totalPages) {
-            res.status(404).json({ message: 'Страница не существует' });
-            return;
-        }
         res.status(200).json({
             data: users,
             pagination: {
@@ -165,4 +165,72 @@ const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.getUserById = getUserById;
+/**
+ * Редактировать пользователя
+ */
+const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const { fullname, group, role } = req.body;
+        // Проверка что передан хотя бы один параметр
+        if (!fullname && !group && !role) {
+            res.status(400).json({ message: 'Необходимо указать хотя бы одно поле для обновления' });
+            return;
+        }
+        const user = yield user_1.default.findById(id).select('-password');
+        if (!user) {
+            res.status(404).json({ message: 'Пользователь не найден' });
+            return;
+        }
+        // Обновляем поля
+        if (fullname)
+            user.fullname = fullname;
+        if (group)
+            user.group = group;
+        // Проверка и обновление ролей
+        if (role) {
+            // Проверка, что роль является массивом
+            if (!Array.isArray(role)) {
+                res.status(400).json({ message: 'Роль должна быть передана в виде массива' });
+                return;
+            }
+            // Проверка на допустимые роли
+            const validRoles = ['dean', 'professor', 'student'];
+            for (const r of role) {
+                if (!validRoles.includes(r)) {
+                    res.status(400).json({ message: `Недопустимая роль: ${r}` });
+                    return;
+                }
+            }
+            // Проверка на роль dean
+            const hasDeanRole = user.role.includes('dean'); // Пользователь уже имеет роль dean
+            const requestHasDeanRole = role.includes('dean'); // Запрос содержит роль dean
+            // Если пользователь уже имеет роль dean, но запрос её не содержит
+            if (hasDeanRole && !requestHasDeanRole) {
+                res.status(400).json({ message: 'Нельзя удалить роль "dean"' });
+                return;
+            }
+            // Если пользователь не имеет роль dean, но запрос её содержит
+            if (!hasDeanRole && requestHasDeanRole) {
+                res.status(400).json({ message: 'Нельзя добавить роль "dean"' });
+                return;
+            }
+            // Обновляем роли
+            user.role = role;
+        }
+        // Сохраняем изменения
+        yield user.save();
+        // Возвращаем обновленного пользователя без пароля
+        res.status(200).json({ message: 'Пользователь успешно обновлен', user });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: 'Ошибка при обновлении пользователя', error: error.message });
+        }
+        else {
+            res.status(500).json({ message: 'Ошибка при обновлении пользователя', error: 'Неизвестная ошибка' });
+        }
+    }
+});
+exports.updateUser = updateUser;
 //# sourceMappingURL=userController.js.map

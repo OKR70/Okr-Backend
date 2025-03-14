@@ -5,24 +5,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
-//import yaml from 'js-yaml';
 const dotenv_1 = __importDefault(require("dotenv"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
-//import expressUseragent from 'express-useragent';
 /*
  * Главный файл
  */
 // Импортируем middlewares
 //import { authToken } from './middlewares/authToken';
+//import { cacheResponse } from './middlewares/cache';
 // Импортирует роуты
-const auth_1 = require("./routes/auth");
-const absence_1 = require("./routes/absence");
-const notFound_1 = require("./routes/notFound");
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
+const rolesRoutes_1 = __importDefault(require("./routes/rolesRoutes"));
 // Загружаем переменные окружения из .env файла
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -67,13 +64,25 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.json());
 app.use(body_parser_1.default.urlencoded({ extended: true }));
 const apiRouter = express_1.default.Router();
-apiRouter.use('/absence', absence_1.AbsenceRouter);
-apiRouter.use('/auth', auth_1.AuthRouter);
+//apiRouter.use(cacheResponse);
+apiRouter.use('/absence', require('./routes/absence'));
+apiRouter.use('/auth', require('./routes/auth'));
+apiRouter.use('/file', require('./routes/file'));
 apiRouter.use('/users', userRoutes_1.default);
+apiRouter.use('/roles', rolesRoutes_1.default);
 // Чтобы все запросы начинались с /api
 app.use('/api', apiRouter);
 // Обработка страниц 404
-app.use('*', notFound_1.NotFoundRouter);
+app.use('*', require('./routes/notFound'));
+// app.use(async (req: Request, res: Response, next: NextFunction) => {
+//     if (res.locals.cacheKey) {
+//         const client = createClient();
+//         await client.connect();
+//         await client.set(res.locals.cacheKey, JSON.stringify(res.locals.data), { EX: 60 }); // Кэширование на 1 минуту
+//         await client.quit();
+//     }
+//     next();
+// });
 // Запуск сервера
 app.listen(HTTP_PORT, HOST, () => {
     console.log(`Server is running on http://localhost:${HTTP_PORT}`);
