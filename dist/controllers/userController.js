@@ -76,10 +76,6 @@ const getAllUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             .limit(limit);
         const totalUsers = yield user_1.default.countDocuments(query);
         const totalPages = Math.ceil(totalUsers / limit);
-        if (page > totalPages) {
-            res.status(404).json({ message: 'Страница не существует' });
-            return;
-        }
         res.status(200).json({
             data: users,
             pagination: {

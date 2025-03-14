@@ -15,16 +15,17 @@ import { authToken } from '../middlewares/authToken';
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, './src/files');
+        cb(null, './src/files');
     },
     filename: (req, file, cb) => {
-      const fileExtension = path.extname(file.originalname); // Получаем расширение файла
-      const newFileName = `${uuidv4()}${fileExtension}`; // Генерируем новое имя с расширением
-      cb(null, newFileName);
+        const fileExtension = path.extname(file.originalname); // Получаем расширение файла
+        const newFileName = `${uuidv4()}${fileExtension}`; // Генерируем новое имя с расширением
+        cb(null, newFileName);
     }
-  });
+});
   
 const upload = multer({ storage: storage });
+
 /*
  * Заявки на пропуски
  */
@@ -78,21 +79,24 @@ router.post(
         fullname
     } = req.user!;
     
-    let newAbsence = new AbsenceModel({
+    const startDateToDate = new Date(startDate);
+    let absence = new AbsenceModel({
         type,
         user: {
             _id,
             fullname
         },
-        startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        startDate: startDateToDate,
+        endDate: endDate ? new Date(endDate) : new Date(startDateToDate.getTime() + 7 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now()),
         ...(documentName && { documentName }),
         ...(type === 'family' && statementInDeanery && { statementInDeanery })
     });
 
     try {
-        const absence = await newAbsence.save();
-        res.status(201).json({ absence });
+        await absence.save();
+        const { createdAt, ...absenceResponse } = absence.toObject();
+        res.status(201).json({ absence: absenceResponse });
     } catch (err) {
         res.status(500).json({ message: err });
     }
@@ -108,7 +112,7 @@ router.get(
         try {
             const userRoles = req.user!.role;
             const query = req.query.query as string;
-            const skip = parseInt(req.query.skip as string) || 0;
+            const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 10;
             const onlyMine = req.query.onlyMine ? req.query.onlyMine : false;
             const status = req.query.status as string;
@@ -130,7 +134,10 @@ router.get(
                 filter['user._id'] = new mongoose.Types.ObjectId(req.user!._id);
             }
 
-            const allAbsences = await AbsenceModel.find(filter);
+            const allAbsences = await AbsenceModel.find(filter)
+                .sort({ createdAt: -1 }) // Сортируем в обратном порядке по createdAt
+                .select('-createdAt');
+                
             let filteredAbsences = allAbsences;
             if (query) {
                 // Создаем массив объектов с ФИО и id заявки
@@ -159,7 +166,7 @@ router.get(
             }
             
             const totalSize = filteredAbsences.length;
-            const paginatedAbsences = filteredAbsences.slice(skip, skip + limit);
+            const paginatedAbsences = filteredAbsences.slice(page * limit, page * limit + limit);
 
             res.status(200).json({
                 totalSize,
@@ -181,6 +188,7 @@ router.patch(
     async (req: Request, res: Response): Promise<any> => {
         try {
             const {
+                type,
                 status,
                 endDate,
                 startDate,
@@ -205,8 +213,7 @@ router.patch(
                     return res.status(403).json({ message: 'Доступ запрещен' });
                 }
             }
-            
-            let documentName;
+
             if (req.file) {
                 absence.documentName = req.file.filename;
             }
@@ -225,6 +232,10 @@ router.patch(
                 absence.status = 'pending';
             }
 
+            if (type && !['educational', 'family', 'medical'].includes(type)) {
+                return res.status(400).json({ message: 'Неправильный тип заявки на пропуск' });
+            }
+            
             if (startDate) {
                 absence.startDate = new Date(startDate);
             }
@@ -239,7 +250,8 @@ router.patch(
 
             // Сохраняем обновленную заявку
             await absence.save();
-            res.status(200).json(absence);
+            const { createdAt, ...absenceResponse } = absence.toObject();
+            res.status(200).json(absenceResponse);
         } catch (err) {
             res.status(500).json({ message: err });
         }
@@ -271,12 +283,14 @@ router.get(
                 }
             }
 
-            const documentUrl = `/api/file/${absence.documentName}`;
-            delete absence.documentName;
+            const hasDocument = absence.documentName !== null && absence.documentName !== undefined;
+            const documentUrl = `/file/${absence.documentName}`;
+            delete absence.documentName, absence.createdAt;
             
             res.status(200).json({
                 absence,
-                documentUrl
+                hasDocument,
+                ...(hasDocument && { documentUrl })
             });
         } catch (err) {
             res.status(500).json({ message: err });

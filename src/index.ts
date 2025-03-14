@@ -1,13 +1,16 @@
-import express from 'express';
+import express, {
+    Request,
+    Response,
+    NextFunction
+} from 'express';
 import cors from 'cors';
-//import yaml from 'js-yaml';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
+import { createClient } from 'redis';
 import swaggerJsdoc from 'swagger-jsdoc';
 import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
-//import expressUseragent from 'express-useragent';
 
 /*
  * Главный файл
@@ -15,6 +18,7 @@ import swaggerUi from 'swagger-ui-express';
 
 // Импортируем middlewares
 //import { authToken } from './middlewares/authToken';
+//import { cacheResponse } from './middlewares/cache';
 
 // Импортирует роуты
 import userRoutes from './routes/userRoutes';
@@ -79,6 +83,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const apiRouter = express.Router();
 
+//apiRouter.use(cacheResponse);
+
 apiRouter.use('/absence', require('./routes/absence'));
 apiRouter.use('/auth', require('./routes/auth'));
 apiRouter.use('/file', require('./routes/file'));
@@ -90,6 +96,16 @@ app.use('/api', apiRouter);
 
 // Обработка страниц 404
 app.use('*', require('./routes/notFound'));
+
+// app.use(async (req: Request, res: Response, next: NextFunction) => {
+//     if (res.locals.cacheKey) {
+//         const client = createClient();
+//         await client.connect();
+//         await client.set(res.locals.cacheKey, JSON.stringify(res.locals.data), { EX: 60 }); // Кэширование на 1 минуту
+//         await client.quit();
+//     }
+//     next();
+// });
 
 // Запуск сервера
 app.listen(HTTP_PORT, HOST, () => {
