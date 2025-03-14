@@ -80,12 +80,15 @@ router.post(
     } = req.user!;
     
     const startDateToDate = new Date(startDate);
+    const startDateToDate = new Date(startDate);
     let absence = new AbsenceModel({
         type,
         user: {
             _id,
             fullname
         },
+        startDate: startDateToDate,
+        endDate: endDate ? new Date(endDate) : new Date(startDateToDate.getTime() + 7 * 24 * 60 * 60 * 1000),
         startDate: startDateToDate,
         endDate: endDate ? new Date(endDate) : new Date(startDateToDate.getTime() + 7 * 24 * 60 * 60 * 1000),
         createdAt: new Date(Date.now()),
@@ -188,6 +191,7 @@ router.patch(
         try {
             const {
                 type,
+                type,
                 status,
                 endDate,
                 startDate,
@@ -230,6 +234,11 @@ router.patch(
             } else {
                 absence.status = 'pending';
             }
+
+            if (type && !['educational', 'family', 'medical'].includes(type)) {
+                return res.status(400).json({ message: 'Неправильный тип заявки на пропуск' });
+            }
+            
 
             if (type && !['educational', 'family', 'medical'].includes(type)) {
                 return res.status(400).json({ message: 'Неправильный тип заявки на пропуск' });
@@ -284,10 +293,14 @@ router.get(
 
             const hasDocument = absence.documentName !== null && absence.documentName !== undefined;
             const documentUrl = `/file/${absence.documentName}`;
+            const hasDocument = absence.documentName !== null && absence.documentName !== undefined;
+            const documentUrl = `/file/${absence.documentName}`;
             delete absence.documentName, absence.createdAt;
             
             res.status(200).json({
                 absence,
+                hasDocument,
+                ...(hasDocument && { documentUrl })
                 hasDocument,
                 ...(hasDocument && { documentUrl })
             });

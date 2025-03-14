@@ -65,6 +65,10 @@ const absenceSchema = new mongoose_1.Schema({
         type: Date,
         required: true
     },
+    createdAt: {
+        type: Date,
+        required: true
+    },
     documentName: String,
     statementInDeanery: Boolean
 }, {
