@@ -79,14 +79,15 @@ router.post(
         fullname
     } = req.user!;
     
+    const startDateToDate = new Date(startDate);
     let absence = new AbsenceModel({
         type,
         user: {
             _id,
             fullname
         },
-        startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        startDate: startDateToDate,
+        endDate: endDate ? new Date(endDate) : new Date(startDateToDate.getTime() + 7 * 24 * 60 * 60 * 1000),
         createdAt: new Date(Date.now()),
         ...(documentName && { documentName }),
         ...(type === 'family' && statementInDeanery && { statementInDeanery })
@@ -110,8 +111,8 @@ router.get(
     async (req: Request, res: Response): Promise<any> => {
         try {
             const userRoles = req.user!.role;
-            const query = req.query.query as string;
-            const skip = parseInt(req.query.skip as string) || 0;
+            const search = req.query.search as string;
+            const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 10;
             const onlyMine = req.query.onlyMine ? req.query.onlyMine : false;
             const status = req.query.status as string;
@@ -138,13 +139,12 @@ router.get(
                 .select('-createdAt');
                 
             let filteredAbsences = allAbsences;
-            if (query) {
+            if (search) {
                 // Создаем массив объектов с ФИО и id заявки
                 const searchItems = await Promise.all(allAbsences!.map(async absence => {
-                    const user = await UserModel.findOne({ _id: absence.user._id });
                     return {
                         _id: absence._id,
-                        fullname: user?.fullname,
+                        fullname: absence.user?.fullname,
                     };
                 }));
                 
@@ -155,7 +155,7 @@ router.get(
                 };
                 
                 const fuse = new Fuse(searchItems, fuseOptions);
-                const searchResults = fuse.search(query);
+                const searchResults = fuse.search(search);
                 
                 // Возвращаем только id заявок, которые соответствуют поисковому запросу
                 const filteredAbsencesIds = searchResults.map(result => result.item._id);
@@ -165,7 +165,7 @@ router.get(
             }
             
             const totalSize = filteredAbsences.length;
-            const paginatedAbsences = filteredAbsences.slice(skip, skip + limit);
+            const paginatedAbsences = filteredAbsences.slice((page - 1) * limit, page * limit);
 
             res.status(200).json({
                 totalSize,
@@ -187,6 +187,7 @@ router.patch(
     async (req: Request, res: Response): Promise<any> => {
         try {
             const {
+                type,
                 status,
                 endDate,
                 startDate,
@@ -230,6 +231,10 @@ router.patch(
                 absence.status = 'pending';
             }
 
+            if (type && !['educational', 'family', 'medical'].includes(type)) {
+                return res.status(400).json({ message: 'Неправильный тип заявки на пропуск' });
+            }
+            
             if (startDate) {
                 absence.startDate = new Date(startDate);
             }
@@ -277,12 +282,14 @@ router.get(
                 }
             }
 
-            const documentUrl = `/api/file/${absence.documentName}`;
+            const hasDocument = absence.documentName !== null && absence.documentName !== undefined;
+            const documentUrl = `/file/${absence.documentName}`;
             delete absence.documentName, absence.createdAt;
             
             res.status(200).json({
                 absence,
-                documentUrl
+                hasDocument,
+                ...(hasDocument && { documentUrl })
             });
         } catch (err) {
             res.status(500).json({ message: err });
