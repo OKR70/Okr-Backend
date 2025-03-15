@@ -171,6 +171,14 @@ router.get('/', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, v
             const filteredAbsencesIds = searchResults.map(result => result.item._id);
             // Ищем заявки по _id
             filteredAbsences = allAbsences.filter(absence => filteredAbsencesIds.includes(absence._id));
+            filteredAbsences.sort((a, b) => {
+                var _a, _b, _c, _d;
+                if (((_a = a.user) === null || _a === void 0 ? void 0 : _a.fullname) < ((_b = b.user) === null || _b === void 0 ? void 0 : _b.fullname))
+                    return -1;
+                if (((_c = a.user) === null || _c === void 0 ? void 0 : _c.fullname) > ((_d = b.user) === null || _d === void 0 ? void 0 : _d.fullname))
+                    return 1;
+                return 0;
+            });
         }
         const totalSize = filteredAbsences.length;
         const paginatedAbsences = filteredAbsences.slice((page - 1) * limit, page * limit);
