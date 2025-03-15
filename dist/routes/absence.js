@@ -63,7 +63,6 @@ const fuse_js_1 = __importDefault(require("fuse.js"));
 const multer_1 = __importDefault(require("multer"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const uuid_1 = require("uuid");
-const user_1 = __importDefault(require("../models/user"));
 const absence_1 = __importDefault(require("../models/absence"));
 const hasRole_1 = require("../middlewares/hasRole");
 const authToken_1 = require("../middlewares/authToken");
@@ -130,7 +129,7 @@ router.post('/create', authToken_1.authToken, (0, hasRole_1.hasRole)('student'),
 router.get('/', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userRoles = req.user.role;
-        const query = req.query.query;
+        const search = req.query.search;
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const onlyMine = req.query.onlyMine ? req.query.onlyMine : false;
@@ -152,13 +151,13 @@ router.get('/', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, v
             .sort({ createdAt: -1 }) // Сортируем в обратном порядке по createdAt
             .select('-createdAt');
         let filteredAbsences = allAbsences;
-        if (query) {
+        if (search) {
             // Создаем массив объектов с ФИО и id заявки
             const searchItems = yield Promise.all(allAbsences.map((absence) => __awaiter(void 0, void 0, void 0, function* () {
-                const user = yield user_1.default.findOne({ _id: absence.user._id });
+                var _a;
                 return {
                     _id: absence._id,
-                    fullname: user === null || user === void 0 ? void 0 : user.fullname,
+                    fullname: (_a = absence.user) === null || _a === void 0 ? void 0 : _a.fullname,
                 };
             })));
             // Настройки для Fuse.js
@@ -167,14 +166,14 @@ router.get('/', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0, v
                 threshold: 0.4,
             };
             const fuse = new fuse_js_1.default(searchItems, fuseOptions);
-            const searchResults = fuse.search(query);
+            const searchResults = fuse.search(search);
             // Возвращаем только id заявок, которые соответствуют поисковому запросу
             const filteredAbsencesIds = searchResults.map(result => result.item._id);
             // Ищем заявки по _id
             filteredAbsences = allAbsences.filter(absence => filteredAbsencesIds.includes(absence._id));
         }
         const totalSize = filteredAbsences.length;
-        const paginatedAbsences = filteredAbsences.slice(page * limit, page * limit + limit);
+        const paginatedAbsences = filteredAbsences.slice((page - 1) * limit, page * limit);
         res.status(200).json({
             totalSize,
             items: paginatedAbsences
