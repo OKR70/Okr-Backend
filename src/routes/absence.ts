@@ -163,23 +163,11 @@ router.get(
                 // Ищем заявки по _id
                 filteredAbsences = allAbsences.filter(absence => filteredAbsencesIds.includes(absence._id));
 
-                const prioritizedAbsences = filteredAbsences.sort((a, b) => {
-                    const aWords = a.user?.fullname?.toLowerCase().split(' ');
-                    const bWords = b.user?.fullname?.toLowerCase().split(' ');
-                    const searchWord = search.toLowerCase();
-            
-                    const aStartsWithSearch = aWords.some(word => word.startsWith(searchWord));
-                    const bStartsWithSearch = bWords.some(word => word.startsWith(searchWord));
-            
-                    if (aStartsWithSearch && !bStartsWithSearch) return -1;
-                    if (!aStartsWithSearch && bStartsWithSearch) return 1;
-            
-                    if (aWords[0] < bWords[0]) return -1;
-                    if (aWords[0] > bWords[0]) return 1;
+                filteredAbsences.sort((a, b) => {
+                    if (a.user?.fullname < b.user?.fullname) return -1;
+                    if (a.user?.fullname > b.user?.fullname) return 1;
                     return 0;
                 });
-            
-                filteredAbsences = prioritizedAbsences;
             }
             
             const totalSize = filteredAbsences.length;
