@@ -162,6 +162,12 @@ router.get(
 
                 // Ищем заявки по _id
                 filteredAbsences = allAbsences.filter(absence => filteredAbsencesIds.includes(absence._id));
+
+                filteredAbsences.sort((a, b) => {
+                    if (a.user?.fullname < b.user?.fullname) return -1;
+                    if (a.user?.fullname > b.user?.fullname) return 1;
+                    return 0;
+                });
             }
             
             const totalSize = filteredAbsences.length;
