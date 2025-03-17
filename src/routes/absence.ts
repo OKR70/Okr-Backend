@@ -8,8 +8,8 @@ import Fuse from 'fuse.js';
 import multer from 'multer';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import UserModel from '../models/user';
 import AbsenceModel from '../models/absence';
+import { canEdit } from '../helpers/canEdit';
 import { hasRole } from '../middlewares/hasRole';
 import { authToken } from '../middlewares/authToken';
 
@@ -217,7 +217,9 @@ router.patch(
             }
             
             const absenceId = req.params.id;
+
             const userRoles = req.user!.role;
+            const userId = req.user!._id.toString();
 
             const absence = await AbsenceModel.findById(absenceId);
 
@@ -225,10 +227,8 @@ router.patch(
                 return res.status(404).json({ message: 'Заявка не найдена' });
             }
 
-            if (userRoles.includes('student') && userRoles.length === 1) {
-                if (absence.user._id !== req.user!.id || !['educational'].includes(absence.type)) {
-                    return res.status(403).json({ message: 'Доступ запрещен' });
-                }
+            if (!canEdit(userId, userRoles, absence)) {
+                return res.status(403).json({ message: 'Доступ запрещен' });
             }
 
             if (req.file) {
@@ -285,7 +285,7 @@ router.get(
         try {
             const absenceId = req.params.id;
             const userRoles = req.user!.role;
-            const userId = req.user!._id;
+            const userId = req.user!._id.toString();
 
             const absence = await AbsenceModel.findById(absenceId).lean();
 
@@ -295,7 +295,7 @@ router.get(
 
             // Если пользователь только студент, он может получить только свою заявку
             if (userRoles.includes('student') && userRoles.length === 1) {
-                if (absence.user._id.toString() !== userId.toString()) {
+                if (absence.user._id.toString() !== userId) {
                     return res.status(403).json({ message: 'Доступ запрещен' });
                 }
             }
@@ -307,7 +307,8 @@ router.get(
             res.status(200).json({
                 absence,
                 hasDocument,
-                ...(hasDocument && { documentUrl })
+                ...(hasDocument && { documentUrl }),
+                canEdit: canEdit(userId, userRoles, absence)
             });
         } catch (err) {
             res.status(500).json({ message: err });
