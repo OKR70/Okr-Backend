@@ -64,6 +64,7 @@ const multer_1 = __importDefault(require("multer"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const uuid_1 = require("uuid");
 const absence_1 = __importDefault(require("../models/absence"));
+const canEdit_1 = require("../helpers/canEdit");
 const hasRole_1 = require("../middlewares/hasRole");
 const authToken_1 = require("../middlewares/authToken");
 const storage = multer_1.default.diskStorage({
@@ -212,14 +213,13 @@ router.patch('/:id', authToken_1.authToken, upload.single('document'), (req, res
         }
         const absenceId = req.params.id;
         const userRoles = req.user.role;
+        const userId = req.user._id.toString();
         const absence = yield absence_1.default.findById(absenceId);
         if (!absence) {
             return res.status(404).json({ message: 'Заявка не найдена' });
         }
-        if (userRoles.includes('student') && userRoles.length === 1) {
-            if (absence.user._id !== req.user.id || !['educational'].includes(absence.type)) {
-                return res.status(403).json({ message: 'Доступ запрещен' });
-            }
+        if (!(0, canEdit_1.canEdit)(userId, userRoles, absence)) {
+            return res.status(403).json({ message: 'Доступ запрещен' });
         }
         if (req.file) {
             absence.documentName = req.file.filename;
@@ -264,22 +264,22 @@ router.get('/:id', authToken_1.authToken, (req, res) => __awaiter(void 0, void 0
     try {
         const absenceId = req.params.id;
         const userRoles = req.user.role;
-        const userId = req.user._id;
+        const userId = req.user._id.toString();
         const absence = yield absence_1.default.findById(absenceId).lean();
         if (!absence) {
             return res.status(404).json({ message: 'Заявка не найдена' });
         }
         // Если пользователь только студент, он может получить только свою заявку
         if (userRoles.includes('student') && userRoles.length === 1) {
-            if (absence.user._id.toString() !== userId.toString()) {
+            if (absence.user._id.toString() !== userId) {
                 return res.status(403).json({ message: 'Доступ запрещен' });
             }
         }
         const hasDocument = absence.documentName !== null && absence.documentName !== undefined;
         const documentUrl = `/file/${absence.documentName}`;
         delete absence.documentName, absence.createdAt;
-        res.status(200).json(Object.assign({ absence,
-            hasDocument }, (hasDocument && { documentUrl })));
+        res.status(200).json(Object.assign(Object.assign({ absence,
+            hasDocument }, (hasDocument && { documentUrl })), { canEdit: (0, canEdit_1.canEdit)(userId, userRoles, absence) }));
     }
     catch (err) {
         res.status(500).json({ message: err });
